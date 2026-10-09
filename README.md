@@ -12,7 +12,7 @@ AI가 생성한 방화벽 룰을 격리 랩에서 **정적·동적으로 검증*
 
 ```
 schema/      IR 스키마 (팀 계약서. 바꾸려면 팀 합의)
-common/      IR 로드·검증·nftables 변환, 랩 실행 헬퍼
+common/      IR 로드·검증·nftables 변환, IR 시뮬레이터(sim.py), 랩 실행 헬퍼
 lab/         Podman 격리 랩 (Containerfile, up/down, 경로 검수)
 scenarios/   자연어 요구사항 + 정답 룰셋 + 프로브 정의        서진정
 mutations/   오류 주입 룰셋                                    서진정
@@ -21,7 +21,8 @@ validator/   정적 검증 + 위험도 판정                           양경�
 prober/      능동 프로빙 (정상·공격 트래픽)                    강윤서
 eval/        지표 계산, 결과 CSV                               강윤서
 deployer/    적용·감시·자동 롤백                               정택준
-pipeline/    전체 실행                                         정택준
+pipeline/    전체 실행, 시뮬레이터-랩 교차 검증(crosscheck.py)   정택준
+tests/       단위 테스트 (python3 -m unittest discover -s tests -t .)
 ```
 
 모든 모듈은 **JSON 입력 → JSON 출력 CLI**다. 앞 모듈이 없어도 예시 JSON 으로 개발할 수 있다.

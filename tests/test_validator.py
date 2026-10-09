@@ -1,18 +1,23 @@
 """validator 테스트. 실행: python3 -m unittest discover -s tests -t .
 
-nft 문법 검사는 fw 컨테이너 없이 exec_in 을 mock 으로 바꿔 결과 처리만 본다.
+nft 문법 검사는 fw 컨테이너 없이 subprocess.run 을 mock 으로 바꿔 호출 인자와 결과 처리만 본다.
 실제 nft -c 통과 여부는 랩에서 따로 확인해야 한다.
 """
 
 import glob
+import io
+import json
+import os
 import subprocess
+import tempfile
 import unittest
 from types import SimpleNamespace
 from unittest import mock
 
 from common.ir import ROOT, load_json
+from common.lab import FW
 from validator.anomalies import find_anomalies
-from validator.validate import nft_check, validate
+from validator.validate import main, nft_check, validate
 
 IOT = "10.10.10.0/24"
 ATTACKER = "10.10.10.66/32"
@@ -127,6 +132,89 @@ class GeneralizationTest(unittest.TestCase):
         self.assertEqual([t for t, _, _ in types(rs)], ["redundancy"])
 
 
+class EqualRangeTest(unittest.TestCase):
+    """두 룰의 범위가 완전히 같을 때(포함 관계의 경계)"""
+
+    def test_same_range_different_action_is_shadowing(self):
+        rs = [rule("a", IOT, SERVER, "tcp", "8080", "accept", 100),
+              rule("d", IOT, SERVER, "tcp", "8080", "drop", 110)]
+        self.assertEqual(types(rs), [("shadowing", ["a", "d"], "high")])
+
+    def test_same_range_same_action_reported_once(self):
+        rs = [rule("a1", IOT, SERVER, "tcp", "8080", "accept", 100),
+              rule("a2", IOT, SERVER, "tcp", "8080", "accept", 110)]
+        self.assertEqual(types(rs), [("redundancy", ["a1", "a2"], "low")])
+
+
+class BoundaryTest(unittest.TestCase):
+    def check(self, rules):
+        return validate({"rules": rules})
+
+    def test_prefix_16_is_not_wide_but_15_is(self):
+        out = self.check([rule("r", "10.10.0.0/16", SERVER, "tcp", "80", "accept", 1)])
+        self.assertEqual((out["ok"], out["risk"]), (True, "low"))
+        out = self.check([rule("r", "10.10.0.0/15", SERVER, "tcp", "80", "accept", 1)])
+        self.assertEqual((out["ok"], out["risk"]), (True, "high"))
+        self.assertIn("/16 보다 넓음", out["reasons"][0])
+
+    def test_wide_drop_is_not_risk(self):
+        out = self.check([rule("r", "any", "any", "any", "any", "drop", 1)])
+        self.assertEqual((out["ok"], out["risk"]), (True, "low"))
+
+    def test_full_port_range_counts_as_all_ports(self):
+        out = self.check([rule("r", IOT, SERVER, "tcp", "0-65535", "accept", 1)])
+        self.assertEqual(out["risk"], "high")
+        self.assertIn("모든 포트 accept", out["reasons"][0])
+
+    def test_port_upper_bound(self):
+        self.assertTrue(self.check([rule("r", IOT, SERVER, "udp", "65535", "accept", 1)])["ok"])
+        self.assertFalse(self.check([rule("r", IOT, SERVER, "udp", "65536", "accept", 1)])["ok"])
+        self.assertFalse(self.check([rule("r", IOT, SERVER, "tcp", "8000-65536", "accept", 1)])["ok"])
+
+    def test_leading_zero_port_rejected(self):
+        for dport in ("080", "8000-08080", "00"):
+            with self.subTest(dport=dport):
+                out = self.check([rule("r", IOT, SERVER, "tcp", dport, "accept", 1)])
+                self.assertFalse(out["ok"])
+                self.assertIn("앞자리 0", out["errors"][0])
+        self.assertTrue(self.check([rule("r", IOT, SERVER, "tcp", "0", "accept", 1)])["ok"])
+
+    def test_cidr_host_bits_rejected(self):
+        out = self.check([rule("r", "10.10.10.1/24", SERVER, "tcp", "80", "accept", 1)])
+        self.assertFalse(out["ok"])
+
+
+class MalformedInputTest(unittest.TestCase):
+    """구조가 어긋난 입력도 예외로 죽지 않고 ok=false JSON 을 낸다(fail-closed)."""
+
+    def test_not_a_ruleset_object(self):
+        for bad in ([], {"rules": ["r1"]}, {"rules": "r1"}, None):
+            with self.subTest(bad=bad):
+                out = validate(bad)
+                self.assertEqual((out["ok"], out["risk"]), (False, None))
+                self.assertTrue(out["errors"])
+
+    def run_main(self, *argv):
+        buf = io.StringIO()
+        with mock.patch("sys.argv", ["validate.py", *argv]), mock.patch("sys.stdout", buf):
+            main()
+        return json.loads(buf.getvalue())
+
+    def test_invalid_json_file_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "candidate.json")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write('{"rules": [')
+            out = self.run_main(path)
+        self.assertEqual((out["ok"], out["risk"]), (False, None))
+        self.assertIn("입력 JSON 파싱 실패", out["errors"][0])
+
+    def test_missing_file_is_run_failure(self):
+        # 파일이 없는 것은 후보의 문제가 아니라 실행 실패다. ok=false 로 기록하지 않고 예외로 멈춘다
+        with self.assertRaises(FileNotFoundError):
+            self.run_main(os.path.join(tempfile.gettempdir(), "no-such-candidate-c010.json"))
+
+
 class ValidateTest(unittest.TestCase):
     def test_high_anomaly_raises_risk(self):
         out = validate({"rules": [rule("acc", IOT, SERVER, "tcp", "8080", "accept", 100),
@@ -176,20 +264,33 @@ class NftCheckTest(unittest.TestCase):
     rs = {"rules": [rule("r", IOT, SERVER, "tcp", "80", "accept", 1)]}
 
     def test_pass(self):
-        with mock.patch("validator.validate.exec_in",
-                        return_value=SimpleNamespace(returncode=0, stderr="")) as m:
+        with mock.patch("validator.validate.subprocess.run",
+                        return_value=SimpleNamespace(returncode=0, stderr=b"")) as m:
             self.assertEqual(nft_check(self.rs), [])
-        self.assertEqual(m.call_args.args[1:5], ("nft", "-c", "-f", "-"))
+        self.assertEqual(m.call_args.args[0][-6:], ["-i", FW, "nft", "-c", "-f", "-"])
+        self.assertEqual(m.call_args.kwargs["timeout"], 30)
+
+    def test_stdin_is_lf_bytes(self):
+        # Windows 회귀: text=True 로 넘기면 \n 이 \r\n 으로 바뀌어 nft 가 매 줄 \r 을 syntax error 로 본다
+        with mock.patch("validator.validate.subprocess.run",
+                        return_value=SimpleNamespace(returncode=0, stderr=b"")) as m:
+            nft_check(self.rs)
+        kw = m.call_args.kwargs
+        self.assertIsInstance(kw["input"], bytes)
+        self.assertNotIn(b"\r", kw["input"])
+        self.assertIn(b"\n", kw["input"])
+        self.assertFalse(kw.get("text") or kw.get("universal_newlines"))
 
     def test_syntax_error_reported(self):
-        with mock.patch("validator.validate.exec_in",
-                        return_value=SimpleNamespace(returncode=1, stderr="Error: syntax error\n")):
+        stderr = "Error: syntax error\n".encode("utf-8")
+        with mock.patch("validator.validate.subprocess.run",
+                        return_value=SimpleNamespace(returncode=1, stderr=stderr)):
             self.assertEqual(nft_check(self.rs), ["nft -c: Error: syntax error"])
 
     def test_cannot_run_fails_closed(self):
         for ex in (FileNotFoundError("podman"), subprocess.TimeoutExpired("podman", 30)):
             with self.subTest(ex=type(ex).__name__), \
-                    mock.patch("validator.validate.exec_in", side_effect=ex):
+                    mock.patch("validator.validate.subprocess.run", side_effect=ex):
                 errors = nft_check(self.rs)
                 self.assertEqual(len(errors), 1)
                 self.assertIn("nft -c 실행 실패", errors[0])

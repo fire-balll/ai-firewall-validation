@@ -35,13 +35,17 @@ def _port_range(spec):
 
 
 def port_errors(ruleset):
-    """스키마 정규식으로는 못 막는 포트 값 오류. 0-65535 밖이거나 범위가 뒤집힌 경우."""
+    """스키마 정규식으로는 못 막는 포트 값 오류. 0-65535 밖이거나 범위가 뒤집힌 경우,
+    앞자리가 0 인 경우("080"). 마지막은 IR 은 10진수로 보지만 nft 가 같은 값으로 읽는지
+    확인되지 않아 분석과 적용이 어긋날 수 있으므로 막는다."""
     errors = []
     for r in ruleset["rules"]:
         if r["dport"] == "any":
             continue
         lo, hi = _port_range(r["dport"])
-        if hi > 65535:
+        if any(len(p) > 1 and p.startswith("0") for p in r["dport"].split("-")):
+            errors.append(f"{r['id']}.dport: {r['dport']} 에 앞자리 0 이 있음 (10진수로만 적을 것)")
+        elif hi > 65535:
             errors.append(f"{r['id']}.dport: {r['dport']} 는 0-65535 밖")
         elif lo > hi:
             errors.append(f"{r['id']}.dport: {r['dport']} 범위의 시작이 끝보다 큼")

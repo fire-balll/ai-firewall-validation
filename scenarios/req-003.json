@@ -1,0 +1,29 @@
+{
+  "id": "req-003",
+  "description": "같은 IoT 서브넷 안에서 단일 호스트만 허용한다. /32 → /24 widen 오류는 attacker 프로브로만 드러난다.",
+  "requirements": [
+    "업데이트 포트(8080)는 IoT 기기(10.10.10.10) 한 대만 쓸 수 있다",
+    "침해된 기기(10.10.10.66)는 어디에도 접속할 수 없다"
+  ],
+  "gold": {
+    "scenario": "req-003",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "업데이트 포트(8080)는 IoT 기기(10.10.10.10) 한 대만 쓸 수 있다",
+        "src": "10.10.10.10/32",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8080",
+        "action": "accept",
+        "priority": 100
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "attacker", "to": "10.10.20.10", "proto": "icmp", "expect": "block" }
+  ]
+}

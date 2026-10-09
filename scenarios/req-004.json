@@ -1,0 +1,39 @@
+{
+  "id": "req-004",
+  "description": "넓은 accept 와 좁은 drop 이 겹친다. drop 이 먼저 매칭돼야 한다. order 오류용.",
+  "requirements": [
+    "IoT 망의 기기는 서버의 업데이트 포트(8080)에 접근할 수 있다",
+    "단, 침해된 기기(10.10.10.66)는 예외로 모든 통신을 차단한다"
+  ],
+  "gold": {
+    "scenario": "req-004",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "단, 침해된 기기(10.10.10.66)는 예외로 모든 통신을 차단한다",
+        "src": "10.10.10.66/32",
+        "dst": "any",
+        "proto": "any",
+        "dport": "any",
+        "action": "drop",
+        "priority": 100
+      },
+      {
+        "id": "g-002",
+        "intent": "IoT 망의 기기는 서버의 업데이트 포트(8080)에 접근할 수 있다",
+        "src": "10.10.10.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8080",
+        "action": "accept",
+        "priority": 110
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "attacker", "to": "10.10.20.10", "proto": "icmp", "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" }
+  ]
+}

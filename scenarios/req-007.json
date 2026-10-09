@@ -1,0 +1,28 @@
+{
+  "id": "req-007",
+  "description": "서버 → IoT 방향만 연다. src·dst 를 뒤집으면 문법상 멀쩡하지만 정반대가 된다. swap 오류용.",
+  "requirements": [
+    "서버는 IoT 기기의 관리 페이지(80)로 상태를 확인할 수 있다",
+    "IoT 기기는 서버로 새 연결을 열 수 없다"
+  ],
+  "gold": {
+    "scenario": "req-007",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "서버는 IoT 기기의 관리 페이지(80)로 상태를 확인할 수 있다",
+        "src": "10.10.30.10/32",
+        "dst": "10.10.10.10/32",
+        "proto": "tcp",
+        "dport": "80",
+        "action": "accept",
+        "priority": 100
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "server", "to": "10.10.10.10", "proto": "tcp", "port": 80, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" }
+  ]
+}

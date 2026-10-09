@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from common.ir import load_json, to_nft  # noqa: E402
-from common.lab import FW, exec_in  # noqa: E402
+from common.lab import FW, exec_in, require_lab  # noqa: E402
 from common.sim import simulate  # noqa: E402
 
 
@@ -43,10 +43,12 @@ def main():
 
     nft_apply(to_nft(ruleset))
     try:
+        require_lab()
         res = subprocess.run([sys.executable, str(ROOT / "prober" / "probe.py"), args.scenario],
                              capture_output=True, text=True)
         if res.returncode != 0:
             sys.exit(f"prober 실패: {res.stderr.strip().splitlines()[-1:]}")
+        require_lab()
         lab = json.loads(res.stdout)
     finally:
         nft_apply(saved)

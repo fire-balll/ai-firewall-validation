@@ -11,7 +11,8 @@
 
 manifest: eval/results/batch-<시각>.json
   {"commit", "dirty", "args", "started", "finished", "runs": [{"scenario", "candidate", "rep", "status", "out"}]}
-  status: applied | rejected_validation | rejected_approval | aborted
+  status: applied | rolled_back | rejected_validation | rejected_approval | aborted
+  실행마다 out/batch-<시각>/<실행>/run.log 에 출력 전체를 남기고, aborted 는 manifest 에 마지막 에러 줄을 기록한다
 사용: batch.py --candidates all --reps 3 --watch 10 --approve no
 """
 
@@ -36,6 +37,11 @@ def now():
     return dt.datetime.now().isoformat(timespec="seconds")
 
 
+def rolled_back(out):
+    deploy = out / "deploy.json"
+    return deploy.exists() and json.loads(deploy.read_text(encoding="utf-8")).get("rolled_back", False)
+
+
 def candidates_for(scenario, kind):
     name = Path(scenario).stem
     out = []
@@ -57,8 +63,9 @@ def main():
     ap.add_argument("--allow-dirty", action="store_true")
     args = ap.parse_args()
 
+    # 커밋 안 된 새 파일(예: mutations/ 의 새 룰셋)도 실행 대상이 되므로 untracked 도 검사한다.
     # 결과 파일 자체는 실행할수록 바뀌므로 검사에서 뺀다
-    dirty = bool(git("status", "--porcelain", "--untracked-files=no", "--", ".", ":(exclude)eval/results"))
+    dirty = bool(git("status", "--porcelain", "--", ".", ":(exclude)eval/results"))
     if dirty and not args.allow_dirty:
         sys.exit("커밋되지 않은 변경이 있다. 커밋 후 실행하거나 --allow-dirty (실험 결과로 쓰지 말 것)")
 
@@ -79,7 +86,9 @@ def main():
             for rep in range(1, args.reps + 1):
                 label = Path(cand).stem if cand else "gold"
                 out = ROOT / "out" / f"batch-{stamp}" / f"{Path(scenario).stem}-{label}-r{rep}"
-                env = dict(os.environ, WATCH=str(args.watch), APPROVE=args.approve, OUT_DIR=str(out))
+                # BATCH_ID·REP·COMMIT 은 결과 CSV 와 manifest 를 잇기 위한 값 (eval 쪽 반영은 별도 논의)
+                env = dict(os.environ, WATCH=str(args.watch), APPROVE=args.approve, OUT_DIR=str(out),
+                           BATCH_ID=stamp, REP=str(rep), COMMIT=manifest["commit"])
                 if cand:
                     env["CANDIDATE"] = cand
                 else:
@@ -87,11 +96,19 @@ def main():
                     env["GENERATOR"] = "mock"
                 res = subprocess.run([str(ROOT / "pipeline" / "run.sh"), scenario], cwd=ROOT,
                                      env=env, capture_output=True, text=True)
+                out.mkdir(parents=True, exist_ok=True)
+                (out / "run.log").write_text(res.stdout + res.stderr, encoding="utf-8")
                 status = STATUS.get(res.returncode, "aborted")
-                manifest["runs"].append({
+                if status == "applied" and rolled_back(out):
+                    status = "rolled_back"
+                run = {
                     "scenario": Path(scenario).stem, "candidate": label, "rep": rep,
                     "status": status, "out": str(out.relative_to(ROOT)),
-                })
+                }
+                if status == "aborted":
+                    lines = (res.stderr or res.stdout).strip().splitlines()
+                    run["error"] = lines[-1] if lines else f"exit {res.returncode}"
+                manifest["runs"].append(run)
                 print(f"{Path(scenario).stem:10} {label:28} r{rep} {status}", flush=True)
                 path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 

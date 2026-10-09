@@ -1,0 +1,50 @@
+{
+  "id": "req-006",
+  "description": "같은 서버라도 포트마다 허용 출발지가 다르다. port·widen 오류용.",
+  "requirements": [
+    "서버의 웹 서비스(80)는 PC와 IoT 기기 모두 쓸 수 있다",
+    "서버의 관리 포트(8080)는 PC만 쓸 수 있다"
+  ],
+  "gold": {
+    "scenario": "req-006",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "서버의 웹 서비스(80)는 PC와 IoT 기기 모두 쓸 수 있다 (PC)",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "80",
+        "action": "accept",
+        "priority": 100
+      },
+      {
+        "id": "g-002",
+        "intent": "서버의 웹 서비스(80)는 PC와 IoT 기기 모두 쓸 수 있다 (IoT)",
+        "src": "10.10.10.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "80",
+        "action": "accept",
+        "priority": 110
+      },
+      {
+        "id": "g-003",
+        "intent": "서버의 관리 포트(8080)는 PC만 쓸 수 있다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8080",
+        "action": "accept",
+        "priority": 120
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "allow" },
+    { "id": "n-002", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "allow" },
+    { "id": "n-003", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" }
+  ]
+}

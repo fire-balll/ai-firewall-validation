@@ -1,6 +1,6 @@
 {
   "id": "req-001",
-  "description": "스마트홈 기본 망 분리. 최소 파이프라인 연결용 예시이며 서진정이 실제 시나리오로 교체한다.",
+  "description": "기본 망 분리. 허용할 통신만 열고 IoT 발 신규 연결은 default deny 로 막는다.",
   "requirements": [
     "PC는 서버의 웹 서비스(80)에 접근할 수 있다",
     "PC는 IoT 기기의 관리 페이지(80)에 접근할 수 있다",
@@ -36,6 +36,7 @@
     { "id": "n-002", "kind": "normal", "from": "pc", "to": "10.10.10.10", "proto": "tcp", "port": 80, "expect": "allow" },
     { "id": "a-001", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
     { "id": "a-002", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
-    { "id": "a-003", "kind": "attack", "from": "attacker", "to": "10.10.20.10", "proto": "icmp", "expect": "block" }
+    { "id": "a-003", "kind": "attack", "from": "attacker", "to": "10.10.20.10", "proto": "icmp", "expect": "block" },
+    { "id": "a-004", "kind": "attack", "from": "iot-dev", "to": "10.10.20.10", "proto": "icmp", "expect": "block" }
   ]
 }

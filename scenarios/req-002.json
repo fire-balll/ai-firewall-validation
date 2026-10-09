@@ -1,0 +1,29 @@
+{
+  "id": "req-002",
+  "description": "IoT 망에서 나가는 통신을 업데이트 포트 하나로 제한한다. port·포트 widen 오류용.",
+  "requirements": [
+    "IoT 기기는 서버의 업데이트 포트(8080)만 쓸 수 있다",
+    "IoT 기기는 서버의 다른 포트와 내부 PC에 접속할 수 없다"
+  ],
+  "gold": {
+    "scenario": "req-002",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "IoT 기기는 서버의 업데이트 포트(8080)만 쓸 수 있다",
+        "src": "10.10.10.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8080",
+        "action": "accept",
+        "priority": 100
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "iot-dev", "to": "10.10.20.10", "proto": "icmp", "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "icmp", "expect": "block" }
+  ]
+}

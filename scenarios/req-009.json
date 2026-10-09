@@ -1,0 +1,28 @@
+{
+  "id": "req-009",
+  "description": "포트 범위 룰. 범위 경계가 틀리면(8000-8079 등) 8080 프로브에서 드러난다.",
+  "requirements": [
+    "PC는 서버의 개발 포트 대역(8000-8100)만 쓸 수 있다",
+    "PC는 서버의 80 포트를 쓸 수 없다"
+  ],
+  "gold": {
+    "scenario": "req-009",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "PC는 서버의 개발 포트 대역(8000-8100)만 쓸 수 있다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8000-8100",
+        "action": "accept",
+        "priority": 100
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" }
+  ]
+}

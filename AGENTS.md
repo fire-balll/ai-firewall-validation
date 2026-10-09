@@ -49,6 +49,7 @@ PR 을 만들기 전에 아래를 실행하고 결과를 PR 본문에 적는다.
 python3 -m py_compile $(git ls-files '*.py')
 bash -n lab/*.sh pipeline/*.sh
 python3 generator/generate.py --scenario scenarios/req-001.json --mock | python3 validator/validate.py -
+python3 -m unittest discover -s tests -t .
 ```
 
 랩을 쓸 수 있는 환경이면 추가로:

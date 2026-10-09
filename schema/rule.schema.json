@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rule.schema.json",
+  "title": "Firewall rule IR",
+  "description": "모든 모듈이 주고받는 방화벽 룰 중간표현. 필드를 바꾸려면 팀 합의가 필요하다.",
+  "type": "object",
+  "required": ["rules"],
+  "additionalProperties": false,
+  "properties": {
+    "scenario": { "type": "string" },
+    "rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "$defs": {
+    "address": {
+      "type": "string",
+      "pattern": "^(any|([0-9]{1,3}\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$"
+    },
+    "rule": {
+      "type": "object",
+      "required": ["id", "intent", "src", "dst", "proto", "dport", "action", "priority"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },
+        "intent": { "type": "string", "minLength": 1 },
+        "src": { "$ref": "#/$defs/address" },
+        "dst": { "$ref": "#/$defs/address" },
+        "proto": { "enum": ["tcp", "udp", "icmp", "any"] },
+        "dport": { "type": "string", "pattern": "^(any|[0-9]{1,5}(-[0-9]{1,5})?)$" },
+        "action": { "enum": ["accept", "drop"] },
+        "priority": { "type": "integer", "minimum": 0 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "proto": { "enum": ["icmp", "any"] } } },
+          "then": { "properties": { "dport": { "const": "any" } } }
+        }
+      ]
+    }
+  }
+}

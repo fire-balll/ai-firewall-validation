@@ -57,6 +57,18 @@ cp .env.example .env            # LLM 키는 여기에만. 커밋 금지
 
 `check-path.sh` 의 1번이 실패하면 호스트가 네트워크 사이를 직접 라우팅하는 것이다. `./lab/down.sh && ISOLATE=1 ./lab/up.sh` 로 다시 띄워 확인한다.
 
+## 실험 실행
+
+```bash
+git status                       # 깨끗해야 함 (manifest 에 커밋 해시를 남기므로)
+python3 pipeline/batch.py --candidates all --reps 3 --watch 10 --approve no
+```
+
+- 후보: `gold`(정답 룰셋), `mutations`(`mutations/<시나리오>-*.json`), `all`
+- 결과: `eval/results/results.csv` 에 실행마다 한 줄, `eval/results/batch-<시각>.json` 에 커밋·인자·실행 목록
+- 상태: `applied` / `rejected_validation` / `rejected_approval` / `aborted`(실행 실패, CSV 에 기록 안 됨)
+- 단건 실행 종료 코드(`pipeline/run.sh`): 0 적용, 3 검증 반려, 4 승인 거부, 1 실행 실패
+
 ## 랩 토폴로지
 
 | 컨테이너 | 네트워크 | IP | 역할 |

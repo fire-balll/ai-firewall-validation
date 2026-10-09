@@ -8,12 +8,14 @@
 - 저장소: https://github.com/fire-balll/ai-firewall-validation
 - 모듈 간 계약은 `schema/rule.schema.json`(IR)이다. 모든 모듈은 **JSON 입력 → JSON 출력 CLI**로 유지한다.
 
-| 디렉터리 | 담당 |
-| --- | --- |
-| `scenarios/`, `mutations/`, `generator/` | 서진정 |
-| `validator/` | 양경찬 |
-| `prober/`, `eval/` | 강윤서 |
-| `lab/`, `deployer/`, `pipeline/`, `common/` | 정택준 |
+| 디렉터리 | 담당 | GitHub |
+| --- | --- | --- |
+| `scenarios/`, `mutations/`, `generator/` | 서진정 | @improvv |
+| `validator/` | 양경찬 | @SoftwareDevJake |
+| `prober/`, `eval/` | 강윤서 | @yxxunseo |
+| `lab/`, `deployer/`, `pipeline/`, `common/` | 정택준 | @iamtaekjun |
+
+담당 디렉터리를 건드리는 PR 에는 `.github/CODEOWNERS` 에 따라 담당자가 리뷰어로 자동 지정된다.
 
 ## 브랜치 전략: GitHub Flow
 

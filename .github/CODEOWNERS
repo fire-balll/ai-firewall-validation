@@ -1,0 +1,14 @@
+# 디렉터리별 담당자. 해당 경로를 바꾸는 PR 에 리뷰어로 자동 지정된다.
+# schema 는 IR 계약이라 전원을 지정한다.
+
+/scenarios/   @improvv
+/mutations/   @improvv
+/generator/   @improvv
+/validator/   @SoftwareDevJake
+/prober/      @yxxunseo
+/eval/        @yxxunseo
+/lab/         @iamtaekjun
+/deployer/    @iamtaekjun
+/pipeline/    @iamtaekjun
+/common/      @iamtaekjun
+/schema/      @improvv @SoftwareDevJake @yxxunseo @iamtaekjun

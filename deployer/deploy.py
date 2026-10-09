@@ -7,7 +7,8 @@ OPNsense savepoint 와 같은 구조를 nftables 로 구현한다.
   3. 감시 기간 동안 프로브 반복
   4. 실패 시 저장해 둔 상태로 복원하고 시간 기록, 통과 시 확정
 
-출력: {"applied", "rolled_back", "t_apply", "t_detect", "t_restored", "detect_s", "mttr_s", "probe"}
+출력: {"applied", "rolled_back", "aborted", "error", "t_apply", "t_detect", "t_restored", "detect_s", "mttr_s", "probe"}
+  aborted=true 이면 실행 실패(프로브 예외 등)로 원복하고 종료 코드 1
 사용: deploy.py out/candidate.json --scenario scenarios/req-001.json --watch 60 > out/deploy.json
 """
 
@@ -40,8 +41,11 @@ def snapshot():
 def probe(scenario_path):
     res = subprocess.run(
         [sys.executable, str(ROOT / "prober" / "probe.py"), scenario_path],
-        capture_output=True, text=True, check=True,
+        capture_output=True, text=True,
     )
+    if res.returncode != 0:
+        lines = res.stderr.strip().splitlines()
+        raise RuntimeError(f"prober 실패 (exit {res.returncode}): {lines[-1] if lines else ''}")
     return json.loads(res.stdout)
 
 
@@ -54,28 +58,46 @@ def main():
     args = ap.parse_args()
 
     saved = snapshot()
-    out = {"applied": False, "rolled_back": False, "t_apply": None, "t_detect": None,
-           "t_restored": None, "detect_s": None, "mttr_s": None, "probe": None}
+    out = {"applied": False, "rolled_back": False, "aborted": False, "error": None,
+           "t_apply": None, "t_detect": None, "t_restored": None,
+           "detect_s": None, "mttr_s": None, "probe": None}
 
     nft_apply(to_nft(load_json(args.ruleset)))
     out["applied"] = True
     out["t_apply"] = time.time()
 
-    deadline = out["t_apply"] + args.watch
-    while True:
-        result = probe(args.scenario)
-        out["probe"] = result
-        if not all(r["pass"] for r in result["results"]):
-            out["t_detect"] = time.time()
-            nft_apply(saved)
-            out["t_restored"] = time.time()
-            out["rolled_back"] = True
-            out["detect_s"] = round(out["t_detect"] - out["t_apply"], 3)
-            out["mttr_s"] = round(out["t_restored"] - out["t_detect"], 3)
-            break
-        if time.time() + args.interval > deadline:
-            break
-        time.sleep(args.interval)
+    # 적용 이후 무엇이 실패하든(프로브 예외, Ctrl-C 포함) 후보 룰을 남겨 두지 않는다.
+    # 이 경우는 실험 결과가 아니라 실행 실패이므로 rolled_back/MTTR 대신 aborted 로 표시한다.
+    try:
+        deadline = out["t_apply"] + args.watch
+        while True:
+            result = probe(args.scenario)
+            out["probe"] = result
+            if not all(r["pass"] for r in result["results"]):
+                out["t_detect"] = time.time()
+                nft_apply(saved)
+                out["t_restored"] = time.time()
+                out["rolled_back"] = True
+                out["detect_s"] = round(out["t_detect"] - out["t_apply"], 3)
+                out["mttr_s"] = round(out["t_restored"] - out["t_detect"], 3)
+                break
+            if time.time() + args.interval > deadline:
+                break
+            time.sleep(args.interval)
+    except BaseException as e:
+        out["aborted"] = True
+        out["error"] = f"{type(e).__name__}: {e}"
+        if not out["rolled_back"]:
+            try:
+                nft_apply(saved)
+                out["t_restored"] = time.time()
+            except Exception as restore_err:
+                print(f"복원 실패. 수동 복원 필요: nft -f 로 아래 스냅샷 적용\n{saved}",
+                      file=sys.stderr)
+                out["error"] += f" / 복원 실패: {restore_err}"
+        json.dump(out, sys.stdout, ensure_ascii=False, indent=2)
+        print()
+        sys.exit(1)
 
     json.dump(out, sys.stdout, ensure_ascii=False, indent=2)
     print()

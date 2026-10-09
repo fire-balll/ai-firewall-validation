@@ -7,7 +7,9 @@ from pathlib import Path
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = json.loads((ROOT / "schema" / "rule.schema.json").read_text())
+SCHEMA = json.loads(
+    (ROOT / "schema" / "rule.schema.json").read_text(encoding="utf-8")
+)
 _validator = Draft202012Validator(SCHEMA)
 
 TABLE = "fwlab"
@@ -17,7 +19,7 @@ def load_json(path):
     if path == "-":
         import sys
         return json.load(sys.stdin)
-    return json.loads(Path(path).read_text())
+    return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 def schema_errors(ruleset):

@@ -41,6 +41,23 @@
 
 ## 파일 목록
 
-| 파일 | 원본 | 유형 | 바꾼 내용 |
-| --- | --- | --- | --- |
-| req-001-port-01.json | scenarios/req-001.json (gold) | port | g-001 의 dport 80 → 8080. 정적 검증은 ok/low 로 통과, 동적 검증에서 n-001 실패로 롤백됨 (예시) |
+원본은 모두 `scenarios/<시나리오>.json` 의 gold 다. "정적"은 현재 `validator/validate.py` 의 risk(모두 ok=true), "실패 프로브"는 `common/sim.py` 시뮬레이터로 시나리오 프로브를 돌렸을 때 정답과 판정이 달라지는 프로브다. 랩 실측이 아니다.
+
+| 파일 | 원본 | 유형 | 바꾼 내용 | 정적 | 실패 프로브 (시뮬레이터) |
+| --- | --- | --- | --- | --- | --- |
+| req-001-missing-01.json | req-001 | missing | g-002(PC → IoT 관리 페이지 80) 삭제 | low | n-002 |
+| req-001-port-01.json | req-001 | port | g-001 의 dport 80 → 8080 | low | n-001 (#13 이후 a-005 도) |
+| req-002-port-any-01.json | req-002 | port-any | g-001 의 dport 8080 → any | high | a-001 |
+| req-003-widen-01.json | req-003 | widen | g-001 의 src 10.10.10.10/32 → 10.10.10.0/24 | low | a-001 |
+| req-004-action-01.json | req-004 | action | g-001(침해 기기 차단)의 action drop → accept | high | a-001, a-002 |
+| req-004-order-01.json | req-004 | order | g-001(drop, 100) 과 g-002(accept, 110) 의 priority 를 맞바꿈 | low | a-001 |
+| req-005-widen-01.json | req-005 | widen | g-001 의 src 10.10.20.0/24 → any | high | a-001 |
+| req-006-missing-01.json | req-006 | missing | g-002(IoT → 서버 80) 삭제 | low | n-002 |
+| req-006-port-01.json | req-006 | port | g-002(IoT → 서버) 의 dport 80 → 8080 | low | n-002, a-001, a-002 |
+| req-007-swap-01.json | req-007 | swap | g-001 의 src 와 dst 를 맞바꿈 (서버 → IoT 가 IoT → 서버로) | low | n-001, a-001 |
+| req-008-narrow-01.json | req-008 | narrow | g-001 의 dst 10.10.10.0/24 → 10.10.10.20/32 (없는 호스트) | low | n-001 |
+| req-008-proto-01.json | req-008 | proto | g-001 의 proto icmp → any | high | a-004 (#13 의 프로브. 그 전에는 안 드러남) |
+| req-009-range-01.json | req-009 | range | g-001 의 dport 8000-8100 → 8000-8079 | low | n-001 (#13 이후 n-003 도) |
+| req-010-action-01.json | req-010 | action | g-003(PC → IoT 관리 페이지) 의 action accept → drop | low | n-002 |
+| req-010-extra-01.json | req-010 | extra | x-001(any → any, proto any, accept, priority 200) 추가 | high | a-003~a-005 (#13 이후 a-006~a-010 도) |
+| req-010-order-01.json | req-010 | order | g-001(침해 기기 drop, 100) 과 g-004(IoT → 서버 8080 accept, 130) 의 priority 를 맞바꿈 | low | a-001 |

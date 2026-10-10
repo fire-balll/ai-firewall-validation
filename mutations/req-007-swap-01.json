@@ -1,0 +1,15 @@
+{
+  "scenario": "req-007",
+  "rules": [
+    {
+      "id": "g-001",
+      "intent": "서버는 IoT 기기의 관리 페이지(80)로 상태를 확인할 수 있다",
+      "src": "10.10.10.10/32",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 100
+    }
+  ]
+}

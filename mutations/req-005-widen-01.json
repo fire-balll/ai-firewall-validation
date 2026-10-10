@@ -1,0 +1,15 @@
+{
+  "scenario": "req-005",
+  "rules": [
+    {
+      "id": "g-001",
+      "intent": "IoT 기기의 관리 페이지(80)는 PC에서만 접근할 수 있다",
+      "src": "any",
+      "dst": "10.10.10.10/32",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 100
+    }
+  ]
+}

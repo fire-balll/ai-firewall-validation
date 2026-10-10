@@ -60,13 +60,21 @@ def main():
     ap.add_argument("--interval", type=int, default=5, help="프로브 간격(초)")
     args = ap.parse_args()
 
-    require_lab()  # 랩이 온전하지 않으면 후보 룰을 적용조차 하지 않는다
-    saved = snapshot()
     out = {"applied": False, "rolled_back": False, "aborted": False, "error": None,
            "t_apply": None, "t_detect": None, "t_restored": None,
            "detect_s": None, "mttr_s": None, "probe": None}
 
-    nft_apply(to_nft(load_json(args.ruleset)))
+    # 적용 전 실패도 적용 후 실패와 같은 형식으로 남긴다 (후보는 적용되지 않은 상태)
+    try:
+        require_lab()  # 랩이 온전하지 않으면 후보 룰을 적용조차 하지 않는다
+        saved = snapshot()
+        nft_apply(to_nft(load_json(args.ruleset)))  # nft -f 는 원자적이라 실패하면 아무것도 바뀌지 않는다
+    except Exception as e:
+        out["aborted"] = True
+        out["error"] = f"{type(e).__name__}: {e}"
+        json.dump(out, sys.stdout, ensure_ascii=False, indent=2)
+        print()
+        sys.exit(1)
     out["applied"] = True
     out["t_apply"] = time.time()
 

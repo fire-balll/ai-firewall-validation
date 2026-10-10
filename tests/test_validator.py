@@ -17,7 +17,8 @@ from unittest import mock
 from common.ir import ROOT, load_json
 from common.lab import FW
 from validator.anomalies import find_anomalies
-from validator.validate import main, nft_check, validate
+from validator.validate import (NFT_CHECK_SCRIPT, NFT_RC_MARKER, TOOL_FAILURE_EXIT, ToolError, main,
+                                nft_check, validate)
 
 IOT = "10.10.10.0/24"
 ATTACKER = "10.10.10.66/32"
@@ -238,12 +239,14 @@ class ValidateTest(unittest.TestCase):
         out = validate({"rules": [rule("r", IOT, SERVER, "tcp", "9000-8000", "accept", 1)]})
         self.assertFalse(out["ok"])
 
-    def test_analysis_error_fails_closed(self):
-        with mock.patch("validator.validate.find_anomalies", side_effect=RuntimeError("boom")):
-            out = validate({"rules": [rule("r", IOT, SERVER, "tcp", "80", "accept", 1)]})
-        self.assertFalse(out["ok"])
-        self.assertIsNone(out["risk"])
-        self.assertIn("정적 분석 실패", out["errors"][0])
+    def test_analysis_error_is_not_candidate_rejection(self):
+        # PR #15 리뷰: 분석기 버그를 후보 invalid(ok=false)로 둔갑시키지 않는다. 예외를 그대로 올린다
+        rs = {"rules": [rule("r", IOT, SERVER, "tcp", "80", "accept", 1)]}
+        for target in ("find_anomalies", "risk_reasons"):
+            with self.subTest(target=target), \
+                    mock.patch(f"validator.validate.{target}", side_effect=RuntimeError("boom")), \
+                    self.assertRaises(RuntimeError):
+                validate(rs)
 
     def test_gold_rulesets_are_low_risk(self):
         files = sorted(glob.glob(str(ROOT / "scenarios" / "req-*.json")))
@@ -260,20 +263,29 @@ class ValidateTest(unittest.TestCase):
         self.assertEqual((out["ok"], out["risk"]), (True, "low"))
 
 
+def nft_done(rc, stderr=b""):
+    """컨테이너 안에서 nft 가 끝까지 실행되고 sh 가 마커를 찍은 결과(podman 종료코드 0)."""
+    return SimpleNamespace(returncode=0, stdout=f"{NFT_RC_MARKER}{rc}\n".encode(), stderr=stderr)
+
+
+def podman_failed(code, stderr=b""):
+    """컨테이너 안 sh 까지 가지 못한 결과(마커 없음)."""
+    return SimpleNamespace(returncode=code, stdout=b"", stderr=stderr)
+
+
 class NftCheckTest(unittest.TestCase):
     rs = {"rules": [rule("r", IOT, SERVER, "tcp", "80", "accept", 1)]}
 
     def test_pass(self):
-        with mock.patch("validator.validate.subprocess.run",
-                        return_value=SimpleNamespace(returncode=0, stderr=b"")) as m:
+        with mock.patch("validator.validate.subprocess.run", return_value=nft_done(0)) as m:
             self.assertEqual(nft_check(self.rs), [])
-        self.assertEqual(m.call_args.args[0][-6:], ["-i", FW, "nft", "-c", "-f", "-"])
+        self.assertEqual(m.call_args.args[0][-5:], ["-i", FW, "sh", "-c", NFT_CHECK_SCRIPT])
+        self.assertIn("nft -c -f -", NFT_CHECK_SCRIPT)
         self.assertEqual(m.call_args.kwargs["timeout"], 30)
 
     def test_stdin_is_lf_bytes(self):
         # Windows 회귀: text=True 로 넘기면 \n 이 \r\n 으로 바뀌어 nft 가 매 줄 \r 을 syntax error 로 본다
-        with mock.patch("validator.validate.subprocess.run",
-                        return_value=SimpleNamespace(returncode=0, stderr=b"")) as m:
+        with mock.patch("validator.validate.subprocess.run", return_value=nft_done(0)) as m:
             nft_check(self.rs)
         kw = m.call_args.kwargs
         self.assertIsInstance(kw["input"], bytes)
@@ -283,17 +295,94 @@ class NftCheckTest(unittest.TestCase):
 
     def test_syntax_error_reported(self):
         stderr = "Error: syntax error\n".encode("utf-8")
-        with mock.patch("validator.validate.subprocess.run",
-                        return_value=SimpleNamespace(returncode=1, stderr=stderr)):
+        with mock.patch("validator.validate.subprocess.run", return_value=nft_done(1, stderr)):
             self.assertEqual(nft_check(self.rs), ["nft -c: Error: syntax error"])
 
-    def test_cannot_run_fails_closed(self):
-        for ex in (FileNotFoundError("podman"), subprocess.TimeoutExpired("podman", 30)):
+    def test_exit_1_without_marker_is_tool_error(self):
+        # PR #15 리뷰: 기본 PODMAN="sudo podman" 에서 sudo 가 실패하면 종료코드 1 이 나온다.
+        # nft 문법 오류와 같은 값이지만 마커가 없으므로 후보 invalid 가 아니라 도구 고장이다
+        for stderr in (b"sudo: a password is required", b"Error: no container with name fw"):
+            with self.subTest(stderr=stderr), \
+                    mock.patch("validator.validate.subprocess.run",
+                               return_value=podman_failed(1, stderr)), \
+                    self.assertRaises(ToolError) as cm:
+                nft_check(self.rs)
+            self.assertIn("podman 종료코드 1", str(cm.exception))
+
+    def test_malformed_marker_is_tool_error(self):
+        # 마커가 마지막 줄이 아니거나 값이 숫자가 아니면 nft 가 끝까지 돌았다고 보지 않는다
+        for stdout in (f"{NFT_RC_MARKER}1\nextra\n".encode(), f"{NFT_RC_MARKER}\n".encode(),
+                       f"{NFT_RC_MARKER}x\n".encode(), b"1\n"):
+            res = SimpleNamespace(returncode=0, stdout=stdout, stderr=b"")
+            with self.subTest(stdout=stdout), \
+                    mock.patch("validator.validate.subprocess.run", return_value=res), \
+                    self.assertRaises(ToolError):
+                nft_check(self.rs)
+
+    # PR #15 리뷰: podman·fw 컨테이너 고장은 후보 invalid 가 아니라 도구 고장이다
+    def test_cannot_run_is_tool_error(self):
+        for ex in (FileNotFoundError("podman"), PermissionError("podman"),
+                   subprocess.TimeoutExpired("podman", 30)):
             with self.subTest(ex=type(ex).__name__), \
-                    mock.patch("validator.validate.subprocess.run", side_effect=ex):
-                errors = nft_check(self.rs)
-                self.assertEqual(len(errors), 1)
-                self.assertIn("nft -c 실행 실패", errors[0])
+                    mock.patch("validator.validate.subprocess.run", side_effect=ex), \
+                    self.assertRaises(ToolError):
+                nft_check(self.rs)
+
+    def test_podman_exit_codes_are_tool_error(self):
+        # 125: podman 오류(컨테이너 없음 등), 126/127: sh 실행 불가·없음, 그 밖: nft 거부 근거 없음
+        for code in (125, 126, 127, 2, -9):
+            res = podman_failed(code, b"Error: no container with name fw")
+            with self.subTest(code=code), \
+                    mock.patch("validator.validate.subprocess.run", return_value=res), \
+                    self.assertRaises(ToolError) as cm:
+                nft_check(self.rs)
+            self.assertIn(f"podman 종료코드 {code}", str(cm.exception))
+
+    def test_nft_exit_codes_other_than_1_are_tool_error(self):
+        # 마커는 있지만 nft 가 없거나(127) 강제 종료(137)된 경우도 룰셋을 거부한 것이 아니다
+        for code in (127, 137, 2):
+            with self.subTest(code=code), \
+                    mock.patch("validator.validate.subprocess.run", return_value=nft_done(code)), \
+                    self.assertRaises(ToolError) as cm:
+                nft_check(self.rs)
+            self.assertIn(f"nft 종료코드 {code}", str(cm.exception))
+
+    def run_main(self, *argv):
+        buf = io.StringIO()
+        with mock.patch("sys.argv", ["validate.py", *argv]), mock.patch("sys.stdout", buf), \
+                mock.patch("sys.stderr", io.StringIO()):
+            main()
+        return buf.getvalue()
+
+    def write_candidate(self, d):
+        path = os.path.join(d, "candidate.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.rs, f)
+        return path
+
+    def test_main_tool_error_exits_2_without_result(self):
+        # 결과 JSON 이 stdout 에 나오면 pipeline 이 ok=false 판정으로 기록할 수 있으므로 아무것도 쓰지 않는다
+        for res in (podman_failed(125, b"Error: no container with name fw"),
+                    podman_failed(1, b"sudo: a password is required")):
+            with self.subTest(code=res.returncode), tempfile.TemporaryDirectory() as d, \
+                    mock.patch("validator.validate.subprocess.run", return_value=res):
+                path = self.write_candidate(d)
+                buf = io.StringIO()
+                with mock.patch("sys.argv", ["validate.py", path, "--nft-check"]), \
+                        mock.patch("sys.stdout", buf), mock.patch("sys.stderr", io.StringIO()), \
+                        self.assertRaises(SystemExit) as cm:
+                    main()
+            self.assertEqual(cm.exception.code, TOOL_FAILURE_EXIT)
+            self.assertEqual(buf.getvalue(), "")
+
+    def test_main_syntax_error_still_rejected(self):
+        # 진짜 문법 오류(마커의 nft 종료코드 1)는 지금처럼 ok=false 결과로 낸다
+        res = nft_done(1, b"Error: syntax error")
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch("validator.validate.subprocess.run", return_value=res):
+            out = json.loads(self.run_main(self.write_candidate(d), "--nft-check"))
+        self.assertEqual((out["ok"], out["risk"]), (False, None))
+        self.assertEqual(out["errors"], ["nft -c: Error: syntax error"])
 
 
 if __name__ == "__main__":

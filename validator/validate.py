@@ -7,7 +7,9 @@ TODO: 기존 룰셋과의 충돌 검사
 
 출력: {"ok": bool, "errors": [...], "risk": "low"|"high", "reasons": [...], "anomalies": [...]}
   reasons 는 risk=high 를 만든 이유만 담는다. anomalies 는 risk 가 low 인 참고 항목까지 모두 담는다.
-  분석 중 예외가 나거나 입력이 JSON·룰셋 구조가 아니면 fail-closed 로 ok=false 를 낸다.
+  ok=false 는 후보 룰셋이 틀렸을 때만 낸다(JSON·룰셋 구조·스키마·포트·nft 문법 오류).
+  검사 도구가 고장 나면(sudo·podman 실행 실패·시간 초과, nft 실행 완료 마커 없음) 결과 JSON 을 내지 않고
+  종료코드 2 로 끝낸다. 분석기 내부 예외도 결과로 바꾸지 않고 그대로 올린다(비0 종료).
 사용: validate.py out/candidate.json [--nft-check] > out/validation.json
 """
 
@@ -24,6 +26,14 @@ from common.lab import FW, PODMAN  # noqa: E402
 from validator.anomalies import find_anomalies, port_errors  # noqa: E402
 
 WIDE_PREFIX = 16  # 이보다 넓은 accept 는 고위험
+NFT_SYNTAX_ERROR = 1  # nft 가 룰셋을 거부할 때의 종료코드. 이것만 후보 오류로 본다
+TOOL_FAILURE_EXIT = 2  # 검사 도구 고장 시 validate.py 종료코드
+NFT_RC_MARKER = "__validator_nft_rc="  # nft 가 실행을 마쳤다는 표시. 뒤에 nft 종료코드가 붙는다
+NFT_CHECK_SCRIPT = f'nft -c -f -; echo "{NFT_RC_MARKER}$?"'
+
+
+class ToolError(RuntimeError):
+    """검사 도구(podman·fw 컨테이너) 고장. 후보 룰셋의 문제가 아니므로 ok=false 로 바꾸지 않는다."""
 
 
 def is_wide(addr):
@@ -44,19 +54,41 @@ def risk_reasons(ruleset):
     return reasons
 
 
+def parse_nft_rc(res):
+    """컨테이너 안 sh 가 끝에 찍은 NFT_RC_MARKER 에서 nft 종료코드를 읽는다. 없으면 None.
+
+    sudo·podman 의 실패도 종료코드 1 을 낼 수 있어 podman 종료코드만으로는 nft 가 룰셋을 거부했는지
+    알 수 없다. 마커가 있으면 nft 가 실제로 실행을 마쳤다는 뜻이다.
+    """
+    if res.returncode != 0:
+        return None
+    lines = res.stdout.decode("utf-8", errors="replace").strip().splitlines()
+    if not lines or not lines[-1].startswith(NFT_RC_MARKER):
+        return None
+    value = lines[-1][len(NFT_RC_MARKER):]
+    return int(value) if value.isascii() and value.isdigit() else None
+
+
 def nft_check(ruleset):
-    # common.lab.exec_in 은 text=True 라 Windows 에서 stdin 의 \n 이 \r\n 으로 바뀌고 nft 가 \r 을
-    # 문법 오류로 본다. 같은 PODMAN·FW 설정으로 UTF-8 bytes 를 직접 넘긴다.
+    # 룰셋은 UTF-8 bytes 로 넘긴다(text 모드면 Windows 에서 \n 이 \r\n 으로 바뀌어 nft 가 문법 오류로 본다).
+    # 실행 실패를 후보 오류와 구분해야 해서 common.lab.exec_in 대신 같은 PODMAN·FW 설정으로 직접 부른다.
     try:
         res = subprocess.run(
-            [*PODMAN, "exec", "-i", FW, "nft", "-c", "-f", "-"],
+            [*PODMAN, "exec", "-i", FW, "sh", "-c", NFT_CHECK_SCRIPT],
             input=to_nft(ruleset).encode("utf-8"), capture_output=True, timeout=30,
         )
-    except (OSError, subprocess.SubprocessError) as ex:  # fail-closed: 검사 못 하면 통과로 보지 않는다
-        return [f"nft -c 실행 실패: {type(ex).__name__}: {ex}"]
-    if res.returncode == 0:
+    except (OSError, subprocess.SubprocessError) as ex:  # 검사를 못 한 것이지 후보가 틀린 것이 아니다
+        raise ToolError(f"nft -c 실행 실패: {type(ex).__name__}: {ex}") from ex
+    stderr = res.stderr.decode("utf-8", errors="replace").strip()
+    rc = parse_nft_rc(res)
+    if rc == 0:
         return []
-    return [f"nft -c: {res.stderr.decode('utf-8', errors='replace').strip()}"]
+    if rc == NFT_SYNTAX_ERROR:
+        return [f"nft -c: {stderr}"]
+    # 마커 없음: sudo·podman 실패(1 포함), 컨테이너 없음(125), sh 없음(126/127), 시그널.
+    # 마커가 1 이외: nft 없음(127)·강제 종료 등. 어느 쪽도 nft 가 룰셋을 거부했다는 근거가 아니다
+    where = f"podman 종료코드 {res.returncode}" if rc is None else f"nft 종료코드 {rc}"
+    raise ToolError(f"nft -c 실행 실패: {where}: {stderr}")
 
 
 def rejected(errors):
@@ -82,12 +114,9 @@ def validate(ruleset, nft=False):
     out = rejected(errors)
     if errors:
         return out
-    try:
-        anomalies = find_anomalies(ruleset)
-        reasons = risk_reasons(ruleset)
-    except Exception as ex:  # fail-closed: 분석하지 못한 룰셋은 통과시키지 않는다
-        out["errors"] = [f"정적 분석 실패: {type(ex).__name__}: {ex}"]
-        return out
+    # 입력 검사를 통과한 룰셋에서 분석기가 예외를 내면 분석기 버그다. ok=false 로 바꾸지 않고 그대로 올린다
+    anomalies = find_anomalies(ruleset)
+    reasons = risk_reasons(ruleset)
     reasons += [f"{a['rules'][1]}: {a['type']} - {a['detail']}" for a in anomalies if a["risk"] == "high"]
     out.update(ok=True, risk="high" if reasons else "low", reasons=reasons, anomalies=anomalies)
     return out
@@ -105,7 +134,11 @@ def main():
     except ValueError as ex:
         out = rejected([f"입력 JSON 파싱 실패: {type(ex).__name__}: {ex}"])
     else:
-        out = validate(ruleset, nft=args.nft_check)
+        try:
+            out = validate(ruleset, nft=args.nft_check)
+        except ToolError as ex:  # 결과 JSON 을 쓰지 않아야 pipeline 이 판정으로 기록하지 않는다
+            print(f"validate.py: 검사 도구 실패: {ex}", file=sys.stderr)
+            sys.exit(TOOL_FAILURE_EXIT)
     json.dump(out, sys.stdout, ensure_ascii=False, indent=2)
     print()
 

@@ -12,11 +12,20 @@ validate.py candidate.json [--nft-check]
 | 0. JSON 읽기 | `ok=false` | JSON 문법·인코딩 오류. 파일이 없으면 결과가 아니라 실행 실패이므로 예외로 멈춘다 |
 | 1. 스키마 (`common/ir.py`) | `ok=false` | CIDR 호스트 비트도 검사. 최상위가 배열이거나 `rules` 항목이 객체가 아니어도 `ok=false` |
 | 2. 포트 값 | `ok=false` | 스키마 정규식이 통과시키는 `70000`, `9000-8000`, 앞자리 0(`080`)을 막는다 |
-| 3. `nft -c` (`--nft-check`) | `ok=false` | fw 컨테이너 필요(`PODMAN`, `FW_CONTAINER` 설정은 `common/lab.py` 와 같다). podman 이 없거나 시간 초과(30초)여도 `ok=false`. 룰셋은 UTF-8 bytes 로 넘긴다(text 모드면 Windows 에서 줄 끝이 `\r\n` 으로 바뀌어 nft 가 문법 오류로 본다) |
+| 3. `nft -c` (`--nft-check`) | `ok=false` (nft 종료코드 1) | fw 컨테이너 필요(`PODMAN`, `FW_CONTAINER` 설정은 `common/lab.py` 와 같다). 컨테이너 안에서 `sh -c 'nft -c -f -; echo "__validator_nft_rc=$?"'` 를 실행하고, stdout 마지막 줄의 이 **실행 완료 마커**로 nft 종료코드를 읽는다. 마커가 없거나(sudo·podman 실패, 시간 초과 30초) nft 종료코드가 1 이 아니면(nft 없음 127, 강제 종료 등) **도구 고장**이다: 결과 JSON 없이 종료코드 2. 룰셋은 UTF-8 bytes 로 넘긴다(text 모드면 Windows 에서 줄 끝이 `\r\n` 으로 바뀌어 nft 가 문법 오류로 본다) |
 | 4. 범위 기준 (문서 2-2) | `risk=high` | /16 보다 넓은 accept(/16 은 해당 없음), 모든 포트 accept(`any`, `0-65535`), 모든 프로토콜 accept |
 | 5. 룰 간 이상 4종 | 유형·방향에 따라 `risk=high` | 아래 표 |
 
-`reasons` 에는 `risk=high` 를 만든 이유만 들어간다(파이프라인이 사람에게 보여 주는 목록). `anomalies` 에는 참고용(`risk: low`)까지 모든 이상이 `{type, rules: [앞, 뒤], risk, detail}` 로 들어간다. 입력 구조가 어긋나거나 4·5단계 분석 중 예외가 나면 **fail-closed** 로 `ok=false` 를 낸다. 검사하지 못한 룰셋을 통과로 보지 않는다.
+`reasons` 에는 `risk=high` 를 만든 이유만 들어간다(파이프라인이 사람에게 보여 주는 목록). `anomalies` 에는 참고용(`risk: low`)까지 모든 이상이 `{type, rules: [앞, 뒤], risk, detail}` 로 들어간다. `ok=false` 는 **후보 룰셋이 틀렸을 때만** 낸다(JSON·입력 구조·스키마·포트·nft 문법). 검사 도구나 분석기가 고장 나면 후보를 반려한 것처럼 기록하지 않고 결과 없이 비0 종료한다. 검사하지 못한 룰셋은 통과도 반려도 아니며, pipeline 은 하위 명령 실패로 보고 그 실행을 기록하지 않는다(PR #15 리뷰 반영).
+
+| 실패 | 종료 | stdout |
+| --- | --- | --- |
+| 후보 오류(JSON·구조·스키마·포트·마커의 nft 종료코드 1) | 0 | `ok=false` 결과 |
+| 도구 고장(sudo·podman 실패·시간 초과로 마커 없음, 마커의 nft 종료코드 1 이외) | 2 | 없음 (stderr 에 사유) |
+| 분석기 내부 예외(4·5단계) | 1 (Python 예외) | 없음 |
+| 입력 파일 없음 | 1 (Python 예외) | 없음 |
+
+podman 종료코드만 보지 않는 이유: 기본 `PODMAN="sudo podman"` 에서 sudo 가 비밀번호를 요구하거나 podman 이 일반 오류를 내면 종료코드가 nft 문법 오류와 같은 1 이다. 마커는 컨테이너 안에서 nft 가 끝난 뒤에만 찍히므로, 마커가 있을 때만 nft 의 판정으로 본다. `pipeline/run.sh` 는 `set -e` 라 validate 가 비0 으로 끝나면 `record` 전에 멈추므로, 도구 고장은 CSV 에 기록되지 않는다.
 
 ## 룰 간 이상 4종
 
@@ -63,4 +72,4 @@ A ⊆ B 는 A 의 모든 프로토콜이 B 에 있고 각 축의 구간이 B 안
 python3 -m unittest tests.test_validator -v
 ```
 
-`nft -c` 는 `subprocess.run` 을 mock 으로 바꿔 호출 인자(stdin 이 `\r` 없는 bytes 인지 포함)와 결과 처리(통과, 문법 오류 메시지, 실행 실패 시 반려)만 시험한다. 실제 fw 컨테이너에서의 통과·실패는 랩에서 확인해야 한다.
+`nft -c` 는 `subprocess.run` 을 mock 으로 바꿔 호출 인자(stdin 이 `\r` 없는 bytes 인지 포함)와 결과 처리(통과, 문법 오류 메시지, 마커 없는 종료코드 1·125 등과 마커의 1 이외 값은 도구 고장 종료코드 2)만 시험한다. 실제 fw 컨테이너에서 마커가 찍히는지와 통과·실패는 랩에서 확인해야 한다.

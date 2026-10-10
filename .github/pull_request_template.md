@@ -13,6 +13,7 @@
 - [ ] mock 생성 → validator 통과
 - [ ] `python3 -m unittest discover -s tests -t .`
 - [ ] 랩에서 `check-path.sh` / `pipeline/run.sh` (실행하지 않았으면 체크하지 말고 이유를 적기)
+- [ ] 외부 의존(컨테이너·명령·파일)을 바꿨다면, 그 대상을 멈춘 상태에서 결과 대신 실패가 나는지 (AGENTS.md 핵심 원칙. 해당 없으면 "해당 없음")
 
 ## 리뷰어가 볼 것
 

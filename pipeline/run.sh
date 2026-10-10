@@ -4,14 +4,22 @@
 #   WATCH=30 GENERATOR=mock ./pipeline/run.sh scenarios/req-001.json
 #   CANDIDATE=mutations/req-001-port-01.json ./pipeline/run.sh scenarios/req-001.json
 #     생성기를 건너뛰고 주어진 룰셋 파일을 후보로 쓴다 (오류 주입 실험용)
-set -euo pipefail
+#   APPROVE=yes|no   고위험 룰 승인 여부를 묻지 않고 정한다 (배치 실행용, 기본 ask)
+#   OUT_DIR=경로      산출물 디렉터리 (기본 out/<시나리오>-<시각>)
+#
+# 종료 코드: 0 적용 완료, 3 검증 실패로 반려, 4 승인 거부, 1 실행 실패(기록 안 함)
+set -Eeuo pipefail
+# 예상하지 못한 하위 명령 실패는 그 종료 코드(3·4 일 수도 있음)가 아니라 항상 1(실행 실패)로 끝낸다.
+# -E 가 있어야 함수(record 등) 안의 실패에도 trap 이 걸린다
+trap 'exit 1' ERR
 cd "$(dirname "$0")/.."
 
 SCENARIO=${1:?시나리오 파일을 지정할 것}
 CANDIDATE=${CANDIDATE:-}
 WATCH=${WATCH:-60}
+APPROVE=${APPROVE:-ask}
 NAME=$(basename "$SCENARIO" .json)
-OUT=out/$NAME-$(date +%Y%m%d-%H%M%S)
+OUT=${OUT_DIR:-out/$NAME-$(date +%Y%m%d-%H%M%S)}
 mkdir -p "$OUT"
 
 if [[ -n "$CANDIDATE" ]]; then
@@ -35,17 +43,21 @@ record() { python3 eval/evaluate.py --scenario "$NAME" --generator "$GENERATOR" 
 if [[ "$ok" != True ]]; then
   echo "검증 실패: 적용하지 않음 ($OUT/validation.json)"
   record
-  exit 1
+  exit 3
 fi
 
 approved=""
 if [[ "$risk" == high ]]; then
   echo "고위험 룰:"; python3 -c 'import json,sys; [print(" -", r) for r in json.load(open(sys.argv[1]))["reasons"]]' "$OUT/validation.json"
-  read -r -p "적용을 승인하나? [y/N] " ans
+  case "$APPROVE" in
+    yes) ans=y ;;
+    no)  ans=n ;;
+    *)   read -r -p "적용을 승인하나? [y/N] " ans ;;
+  esac
   if [[ "$ans" != y ]]; then
     echo "승인 거부: 적용하지 않음"
     record --approved no
-    exit 1
+    exit 4
   fi
   approved=yes
 fi

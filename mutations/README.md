@@ -14,7 +14,7 @@
 
 | 유형 | 바꾸는 것 | 예시 | 결과 | 정적 검증으로 잡히나 (가설) | 적용할 시나리오 |
 | --- | --- | --- | --- | --- | --- |
-| order | priority 순서 | 좁은 drop 과 넓은 accept 의 순서를 뒤집음 | 과허용 | shadowing·generalization 탐지가 구현되면 잡힘. 현재 validator 로는 안 잡힘 | req-004, req-010 |
+| order | priority 순서 | 좁은 drop 과 넓은 accept 의 순서를 뒤집음 | 과허용 | 이상 탐지(#15)가 들어가면 잡힘. 앞의 accept 와 뒤의 drop 이 일부만 겹치면 correlation, accept 가 drop 을 모두 포함하면 shadowing 으로 둘 다 고위험. 현재 main 의 validator 로는 안 잡힘 | req-004, req-010 |
 | widen | src·dst CIDR 확대 | /32 → /24, /24 → /16, → any | 과허용 | /16 보다 넓거나 any 일 때만 잡힘 (고위험 기준). /32 → /24 는 안 잡힘 | req-003, req-005 |
 | port-any | 특정 포트 → any | dport 8080 → any | 과허용 | 잡힘 (모든 포트 accept 고위험 기준) | req-002 |
 | port | 포트 번호 오기 | dport 80 → 8080 | 과허용 + 과차단 | 정답 비교 없이는 안 잡힘 | req-001, req-006 |

@@ -22,7 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from common.ir import load_json, to_nft  # noqa: E402
-from common.lab import FW, exec_in  # noqa: E402
+from common.lab import FW, exec_in, require_lab  # noqa: E402
 
 
 def nft_apply(text):
@@ -39,6 +39,8 @@ def snapshot():
 
 
 def probe(scenario_path):
+    # 프로브 전후로 랩이 온전해야 결과를 믿을 수 있다 (도중에 꺼져도 거짓 block 이 나온다)
+    require_lab()
     res = subprocess.run(
         [sys.executable, str(ROOT / "prober" / "probe.py"), scenario_path],
         capture_output=True, text=True,
@@ -46,6 +48,7 @@ def probe(scenario_path):
     if res.returncode != 0:
         lines = res.stderr.strip().splitlines()
         raise RuntimeError(f"prober 실패 (exit {res.returncode}): {lines[-1] if lines else ''}")
+    require_lab()
     return json.loads(res.stdout)
 
 
@@ -57,12 +60,21 @@ def main():
     ap.add_argument("--interval", type=int, default=5, help="프로브 간격(초)")
     args = ap.parse_args()
 
-    saved = snapshot()
     out = {"applied": False, "rolled_back": False, "aborted": False, "error": None,
            "t_apply": None, "t_detect": None, "t_restored": None,
            "detect_s": None, "mttr_s": None, "probe": None}
 
-    nft_apply(to_nft(load_json(args.ruleset)))
+    # 적용 전 실패도 적용 후 실패와 같은 형식으로 남긴다 (후보는 적용되지 않은 상태)
+    try:
+        require_lab()  # 랩이 온전하지 않으면 후보 룰을 적용조차 하지 않는다
+        saved = snapshot()
+        nft_apply(to_nft(load_json(args.ruleset)))  # nft -f 는 원자적이라 실패하면 아무것도 바뀌지 않는다
+    except Exception as e:
+        out["aborted"] = True
+        out["error"] = f"{type(e).__name__}: {e}"
+        json.dump(out, sys.stdout, ensure_ascii=False, indent=2)
+        print()
+        sys.exit(1)
     out["applied"] = True
     out["t_apply"] = time.time()
 

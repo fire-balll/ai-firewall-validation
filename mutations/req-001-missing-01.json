@@ -1,0 +1,15 @@
+{
+  "scenario": "req-001",
+  "rules": [
+    {
+      "id": "g-001",
+      "intent": "PC는 서버의 웹 서비스(80)에 접근할 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 100
+    }
+  ]
+}

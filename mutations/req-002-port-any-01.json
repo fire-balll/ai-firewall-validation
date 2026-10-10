@@ -1,0 +1,15 @@
+{
+  "scenario": "req-002",
+  "rules": [
+    {
+      "id": "g-001",
+      "intent": "IoT 기기는 서버의 업데이트 포트(8080)만 쓸 수 있다",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 100
+    }
+  ]
+}

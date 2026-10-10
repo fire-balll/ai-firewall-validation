@@ -1,0 +1,25 @@
+{
+  "scenario": "req-008",
+  "rules": [
+    {
+      "id": "g-001",
+      "intent": "PC는 IoT 망과 서버 망에 ping 할 수 있다 (IoT 망)",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.10.20/32",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 100
+    },
+    {
+      "id": "g-002",
+      "intent": "PC는 IoT 망과 서버 망에 ping 할 수 있다 (서버 망)",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.0/24",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 110
+    }
+  ]
+}

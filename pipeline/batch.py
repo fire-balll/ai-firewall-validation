@@ -72,22 +72,54 @@ def _rel(path):
         return path
 
 
+def _is_number(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+# 필드별 유효성. None·빈 문자열·잘못된 타입은 "재현 조건을 모름"과 같다
+META_CHECKS = {
+    "model": lambda v: isinstance(v, str) and v.strip() != "",
+    "digest": lambda v: isinstance(v, str) and v.strip() != "",
+    "ollama_version": lambda v: isinstance(v, str) and v.strip() != "",
+    "temperature": _is_number,
+    "seed": lambda v: isinstance(v, int) and not isinstance(v, bool),
+    "prompt_version": lambda v: isinstance(v, str) and v.strip() != "",
+}
+
+
 def load_meta(cand):
-    """generated 후보의 meta. 없거나 필드가 빠지면 ValueError."""
+    """generated 후보의 meta. 없거나, 깨졌거나, 필드가 빠지거나 값이 비거나 타입이 틀리면 ValueError.
+
+    round(피드백 루프 라운드)는 선택 필드로 없으면 1. 있으면 1 이상의 정수여야 한다.
+    """
     path = Path(cand[: -len(".json")] + ".meta.json")
     if not path.exists():
         raise ValueError(f"meta 없음: {_rel(path)}")
-    meta = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        meta = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as e:
+        raise ValueError(f"meta JSON 파싱 실패 ({e}): {_rel(path)}") from e
+    if not isinstance(meta, dict):
+        raise ValueError(f"meta 가 객체가 아님: {_rel(path)}")
     missing = [k for k in META_KEYS if k not in meta]
     if missing:
         raise ValueError(f"meta 필드 누락 {missing}: {_rel(path)}")
-    return meta
+    invalid = [k for k in META_KEYS if not META_CHECKS[k](meta[k])]
+    rnd = meta.get("round", 1)
+    if not (isinstance(rnd, int) and not isinstance(rnd, bool) and rnd >= 1):
+        invalid.append("round")
+    if invalid:
+        raise ValueError(f"meta 값이 비었거나 타입이 틀림 {invalid}: {_rel(path)}")
+    if meta["temperature"] == 0:
+        # 단독 기준 실행으로는 쓸 수 있어 막지는 않는다. 반복(seed 여러 개)이면 출력이 같아 의미가 없다
+        print(f"경고: temperature 0 — seed 를 바꿔 반복해도 출력이 같을 수 있음: {_rel(path)}", file=sys.stderr)
+    return dict(meta, round=rnd)
 
 
 def generator_label(meta):
     """CSV generator 열에 들어갈 값. 쉼표 없이 한 칸에 재현 조건을 모두 담는다."""
     return (f"{meta['model']}@{str(meta['digest']).split(':')[-1][:12]}|t={meta['temperature']}"
-            f"|seed={meta['seed']}|p={meta['prompt_version']}")
+            f"|seed={meta['seed']}|p={meta['prompt_version']}|r={meta.get('round', 1)}")
 
 
 def main():

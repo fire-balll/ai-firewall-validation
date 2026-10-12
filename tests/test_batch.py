@@ -58,8 +58,38 @@ class GeneratedTest(unittest.TestCase):
 
     def test_generator_label_has_reproduction_conditions_and_no_comma(self):
         label = batch.generator_label(META)
-        self.assertEqual(label, "qwen2.5:14b@7cdf5a0187d5|t=0.7|seed=1|p=v1")
+        self.assertEqual(label, "qwen2.5:14b@7cdf5a0187d5|t=0.7|seed=1|p=v1|r=1")
         self.assertNotIn(",", label)
+
+
+    def test_null_empty_or_wrong_type_values_are_errors(self):
+        for bad in ({"digest": None}, {"ollama_version": ""}, {"seed": None}, {"seed": "1"},
+                    {"seed": True}, {"temperature": "0.7"}, {"model": "  "}, {"round": 0}):
+            with self.subTest(bad=bad):
+                g = self.write("req-001-qwen2.5-14b-s1", meta=dict(META, **bad))
+                with self.assertRaisesRegex(ValueError, "비었거나 타입이 틀림"):
+                    batch.load_meta(g)
+
+    def test_broken_meta_json_names_the_file(self):
+        g = self.write("req-001-qwen2.5-14b-s1", meta=None)
+        (self.gen / "req-001-qwen2.5-14b-s1.meta.json").write_text("{bad", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "meta JSON 파싱 실패.*req-001-qwen2.5-14b-s1.meta.json"):
+            batch.load_meta(g)
+
+    def test_round_defaults_to_1_and_shows_in_label(self):
+        g1 = self.write("req-001-qwen2.5-14b-s1")
+        g2 = self.write("req-001-qwen2.5-14b-s1-r2", meta=dict(META, round=2))
+        l1 = batch.generator_label(batch.load_meta(g1))
+        l2 = batch.generator_label(batch.load_meta(g2))
+        self.assertTrue(l1.endswith("|r=1"))
+        self.assertTrue(l2.endswith("|r=2"))
+        self.assertNotEqual(l1, l2)
+
+    def test_temperature_zero_warns_but_loads(self):
+        g = self.write("req-001-qwen2.5-14b-s1", meta=dict(META, temperature=0))
+        with mock.patch("sys.stderr") as err:
+            self.assertEqual(batch.load_meta(g)["temperature"], 0)
+        self.assertTrue(any("temperature 0" in str(c) for c in err.write.call_args_list))
 
 
 if __name__ == "__main__":

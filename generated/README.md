@@ -26,7 +26,13 @@ generated/<시나리오>-<모델>-s<seed>.meta.json   생성 조건
 | `seed` | `1` | 반복 회차마다 바꾼다 (아래) |
 | `prompt_version` | `"v1"` | 프롬프트를 바꾸면 올린다 |
 
-추가 필드(생성 시각, 소요 시간, 재시도 횟수 등)는 자유롭게 넣어도 된다. batch 는 위 6개만 확인한다.
+값이 `null`·빈 문자열이거나 타입이 틀려도(`seed` 는 정수, `temperature` 는 숫자) 누락으로 본다.
+
+선택 필드 `round`: 피드백 루프 라운드(1 이상의 정수, 없으면 1). 파일명의 `-r<라운드>` 와 맞춘다. CSV 에 `|r=라운드` 로 남아 1·2라운드 결과를 CSV 만으로 구분할 수 있다.
+
+temperature 0 은 막지 않고 경고만 낸다(단독 기준 실행으로는 쓸 수 있다). 다만 seed 를 바꿔 반복하는 경우엔 의미가 없다.
+
+추가 필드(생성 시각, 소요 시간, 재시도 횟수 등)는 자유롭게 넣어도 된다. batch 는 위 필드만 확인한다.
 
 ## 반복 규칙
 
@@ -40,4 +46,4 @@ temperature 0 에 seed 를 고정하면 몇 번을 돌려도 같은 출력이 �
 python3 pipeline/batch.py --candidates generated --reps 1
 ```
 
-meta 가 없거나 필드가 빠진 후보가 하나라도 있으면 아무것도 실행하지 않고 중단한다(AGENTS.md 핵심 원칙). 결과 CSV 의 generator 열에는 `모델@digest앞12자(sha256: 제외)|t=temperature|seed=seed|p=프롬프트버전` 이 남고, manifest 에는 meta 전체가 남는다.
+meta 가 없거나 필드가 빠진 후보가 하나라도 있으면 아무것도 실행하지 않고 중단한다(AGENTS.md 핵심 원칙). 결과 CSV 의 generator 열에는 `모델@digest앞12자(sha256: 제외)|t=temperature|seed=seed|p=프롬프트버전|r=라운드` 이 남고, manifest 에는 meta 전체가 남는다.

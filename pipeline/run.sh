@@ -62,7 +62,12 @@ if [[ "$risk" == high ]]; then
   approved=yes
 fi
 
-if ! python3 deployer/deploy.py "$OUT/candidate.json" --scenario "$SCENARIO" --watch "$WATCH" > "$OUT/deploy.json"; then
+# candidate.json 으로 복사하면 파일명이 사라지므로, 상태 추적 여부(파일명의 -state-)는 여기서 넘긴다
+deploy_args=()
+if [[ -n "$CANDIDATE" && "$(basename "$CANDIDATE")" == *-state-* ]]; then
+  deploy_args+=(--stateless)
+fi
+if ! python3 deployer/deploy.py "$OUT/candidate.json" --scenario "$SCENARIO" --watch "$WATCH" "${deploy_args[@]+"${deploy_args[@]}"}" > "$OUT/deploy.json"; then
   # 실행 실패는 실험 결과가 아니므로 CSV 에 기록하지 않는다
   echo "적용 중 실행 실패: 원복 후 중단 ($OUT/deploy.json)" >&2
   exit 1

@@ -58,19 +58,33 @@ def sorted_rules(ruleset):
     return sorted(ruleset["rules"], key=lambda r: (r["priority"], r["id"]))
 
 
-def to_nft(ruleset):
+# 파일명에 이 표시가 있는 후보는 상태 추적 룰 없이 변환한다 (오류 주입 state 유형, mutations/README.md)
+STATELESS_MARK = "-state-"
+
+
+def stateful_for(path):
+    """후보 파일명으로 상태 추적 룰을 넣을지 정한다. IR 에는 이 정보를 담을 필드가 없다."""
+    return STATELESS_MARK not in Path(path).name
+
+
+def to_nft(ruleset, stateful=True):
     """IR 룰셋을 nft -f 로 적용할 전체 룰셋 텍스트로 변환한다.
 
-    forward 체인 기본 정책은 drop(default deny)이고, 상태 추적 허용 룰을 항상 맨 앞에 둔다.
+    forward 체인 기본 정책은 drop(default deny)이고, 상태 추적 허용 룰을 맨 앞에 둔다.
     룰은 priority 오름차순으로 배치되며 first-match로 동작한다.
+
+    stateful=False 는 상태 추적 룰을 뺀다. 응답 트래픽이 default deny 에 걸리므로
+    연결이 성립하지 않는다. common/sim.py 는 응답을 항상 허용으로 가정하므로
+    이 경우 시뮬레이터와 랩의 판정이 갈린다 (동적 검증만 잡는 오류의 대표 사례).
     """
     lines = [
         "flush ruleset",
         f"table inet {TABLE} {{",
         "  chain forward {",
         "    type filter hook forward priority 0; policy drop;",
-        "    ct state established,related accept",
     ]
+    if stateful:
+        lines.append("    ct state established,related accept")
     for r in sorted_rules(ruleset):
         match = _match(r)
         lines.append(f'    {match + " " if match else ""}counter {r["action"]} comment "{r["id"]}"')

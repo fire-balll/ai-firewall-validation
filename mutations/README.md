@@ -25,39 +25,47 @@
 | action | accept 와 drop 을 뒤집음 | 침해 기기 drop → accept | 과허용 / 과차단 | accept 로 바뀐 룰이 넓으면(any, /16 초과) 잡힘. 좁은 룰이면 안 잡힘 | req-004, req-010 |
 | narrow | 범위 축소·다른 호스트 | /24 → 다른 /32 | 과차단 | 안 잡힘 | req-008 |
 | extra | 정답에 없는 넓은 accept 추가 | any → any accept | 과허용 | 잡힘 (any-to-any 고위험 기준) | req-010 |
+| state | 응답 트래픽 누락 (상태 추적 룰을 뺌) | 정답 룰셋 그대로, 파일명(`req-NNN-state-NN.json`)으로 `ct state established,related accept` 없이 적용 | 과차단 (새 연결이 성립하지 않음) | 안 잡힘. IR 이 정답과 같아서 정적 검증과 시뮬레이터로는 원리상 못 잡는다 | 전체 (req-001~010) |
 
 "가설" 열이 실제로 맞는지 확인하는 것이 실험의 핵심 질문이다. 가설은 문서 2-2 의 고위험 기준과 계획된 이상 탐지 4종을 기준으로 적었고, 유형별 예시 하나씩을 현재 `validator/validate.py` 에 넣어 order·action 칸을 고쳤다. 첫 실험 결과를 커밋한 뒤에는 이 표의 유형을 바꾸지 않는다(`AGENTS.md`).
 
-### 지금 IR 로 표현할 수 없는 유형 (팀 논의 필요)
+### state 유형
 
-| 유형 | 내용 | 막히는 이유 |
-| --- | --- | --- |
-| state | 응답 트래픽 누락 (`ct state established,related accept` 가 빠짐) | 변환기(`common/ir.py` 의 `to_nft`)가 상태 추적 룰을 항상 맨 앞에 넣는다. IR 에는 이 룰을 끌 필드가 없다. |
+IR 에는 상태 추적 룰을 끌 필드가 없어서, state 후보는 **IR 이 정답과 똑같고 파일명으로만 구분**한다. 변환기(`common/ir.py` 의 `stateful_for`)는 파일명 전체가 `req-<숫자>-state-<숫자>.json` 형식일 때만 상태 추적 룰 없이 nft 로 바꾼다 (#23). 그래서 이 유형의 파일은 이름을 이 형식 그대로 둬야 한다. 이름을 바꾸거나 다른 이름으로 복사하면 정답과 똑같이 적용된다. 반대로 이름 중간에 `-state-` 가 들어간 다른 후보(예: LLM 후보의 모델 태그)는 stateless 로 바뀌지 않는다.
 
-계획서의 "응답 트래픽 누락"이 이 유형이다. 넣으려면 둘 중 하나가 필요하다.
-
-1. 오류 주입 파일을 IR 이 아니라 nft 텍스트로도 둘 수 있게 한다 (deployer·validator 입력 형식 변경).
-2. 변환기에 상태 추적 룰을 빼는 옵션을 둔다 (`common/` 담당 정택준, schema 는 그대로).
+- 시뮬레이터(`common/sim.py`)는 응답 트래픽을 항상 허용으로 가정하므로 정답과 판정이 같다. `scenarios/coverage.py` 는 시뮬레이터로 IR 변형만 만들기 때문에 이 유형을 다루지 않고, `equivalent` 에도 넣지 않는다. 동적 검증만 잡는 오류로 따로 센다.
+- stateless 에서 올바른 정책(응답 방향 허용)은 IR 로 쓸 수 없다(출발지 포트 필드가 없음). 그래서 이 유형은 항상 틀린 룰이다.
+- 정상 프로브가 모두 timeout 으로 실패해 감지 시간이 다른 유형보다 길다(#23 의 req-001: 23.9초, 다른 유형 8~10초). 감지 시간은 유형별로 나눠 본다.
 
 ## 파일 목록
 
-원본은 모두 `scenarios/<시나리오>.json` 의 gold 다. "정적"은 현재 `validator/validate.py` 의 risk(모두 ok=true), "실패 프로브"는 `common/sim.py` 시뮬레이터로 시나리오 프로브를 돌렸을 때 정답과 판정이 달라지는 프로브다. 랩 실측이 아니다.
+원본은 모두 `scenarios/<시나리오>.json` 의 gold 다. "정적"은 현재 `validator/validate.py` 의 risk(모두 ok=true), "실패 프로브"는 `common/sim.py` 시뮬레이터로 시나리오 프로브를 돌렸을 때 정답과 판정이 달라지는 프로브다. 랩 실측이 아니다. state 유형은 시뮬레이터로 드러나지 않으므로 #23 의 랩 결과(Mac, rootless Podman)를 괄호로 적었다.
 
 | 파일 | 원본 | 유형 | 바꾼 내용 | 정적 | 실패 프로브 (시뮬레이터) |
 | --- | --- | --- | --- | --- | --- |
 | req-001-missing-01.json | req-001 | missing | g-002(PC → IoT 관리 페이지 80) 삭제 | low | n-002 |
 | req-001-port-01.json | req-001 | port | g-001 의 dport 80 → 8080 | low | n-001 (#13 이후 a-005 도) |
+| req-001-state-01.json | req-001 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001, n-002) |
 | req-002-port-any-01.json | req-002 | port-any | g-001 의 dport 8080 → any | high | a-001 |
+| req-002-state-01.json | req-002 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001) |
+| req-003-state-01.json | req-003 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001) |
 | req-003-widen-01.json | req-003 | widen | g-001 의 src 10.10.10.10/32 → 10.10.10.0/24 | low | a-001 |
 | req-004-action-01.json | req-004 | action | g-001(침해 기기 차단)의 action drop → accept | high | a-001, a-002 |
 | req-004-order-01.json | req-004 | order | g-001(drop, 100) 과 g-002(accept, 110) 의 priority 를 맞바꿈 | low | a-001 |
+| req-004-state-01.json | req-004 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001) |
+| req-005-state-01.json | req-005 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001) |
 | req-005-widen-01.json | req-005 | widen | g-001 의 src 10.10.20.0/24 → any | high | a-001 |
 | req-006-missing-01.json | req-006 | missing | g-002(IoT → 서버 80) 삭제 | low | n-002 |
 | req-006-port-01.json | req-006 | port | g-002(IoT → 서버) 의 dport 80 → 8080 | low | n-002, a-001, a-002 |
+| req-006-state-01.json | req-006 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
+| req-007-state-01.json | req-007 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001) |
 | req-007-swap-01.json | req-007 | swap | g-001 의 src 와 dst 를 맞바꿈 (서버 → IoT 가 IoT → 서버로) | low | n-001, a-001 |
 | req-008-narrow-01.json | req-008 | narrow | g-001 의 dst 10.10.10.0/24 → 10.10.10.20/32 (없는 호스트) | low | n-001 |
 | req-008-proto-01.json | req-008 | proto | g-001 의 proto icmp → any | high | a-004 (#13 의 프로브. 그 전에는 안 드러남) |
+| req-008-state-01.json | req-008 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001, n-002) |
 | req-009-range-01.json | req-009 | range | g-001 의 dport 8000-8100 → 8000-8079 | low | n-001 (#13 이후 n-003 도) |
+| req-009-state-01.json | req-009 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
 | req-010-action-01.json | req-010 | action | g-003(PC → IoT 관리 페이지) 의 action accept → drop | low | n-002 |
 | req-010-extra-01.json | req-010 | extra | x-001(any → any, proto any, accept, priority 200) 추가 | high | a-003~a-005 (#13 이후 a-006~a-010 도) |
 | req-010-order-01.json | req-010 | order | g-001(침해 기기 drop, 100) 과 g-004(IoT → 서버 8080 accept, 130) 의 priority 를 맞바꿈 | low | a-001 |
+| req-010-state-01.json | req-010 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-005) |

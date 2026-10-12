@@ -4,13 +4,17 @@
 후보 룰셋:
   gold       시나리오의 정답 룰셋 (generator --mock)
   mutations  mutations/<시나리오>-*.json 오류 주입 룰셋
-  all        둘 다
+  generated  generated/<시나리오>-*.json LLM 생성 룰셋 (옆에 .meta.json 필수, 형식은 generated/README.md)
+  all        셋 다
+
+generated 후보는 meta 의 모델·digest·temperature·seed·프롬프트 버전을 CSV generator 열에 남긴다.
+meta 가 없거나 필드가 빠진 후보가 하나라도 있으면 아무것도 실행하지 않고 중단한다.
 
 재현성을 위해 작업 트리가 깨끗해야 실행한다(커밋 해시를 기록하므로). --allow-dirty 로 무시할 수 있으나
 그 결과는 실험 결과로 쓰지 않는다.
 
 manifest: eval/results/batch-<시각>.json
-  {"commit", "dirty", "args", "started", "finished", "runs": [{"scenario", "candidate", "rep", "status", "out"}]}
+  {"commit", "dirty", "args", "started", "finished", "runs": [{"scenario", "candidate", "rep", "status", "out", "meta"?}]}
   status: applied | rolled_back | rejected_validation | rejected_approval | aborted
   실행마다 out/batch-<시각>/<실행>/run.log 에 출력 전체를 남기고, aborted 는 manifest 에 마지막 에러 줄을 기록한다
 사용: batch.py --candidates all --reps 3 --watch 10 --approve no
@@ -27,6 +31,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 STATUS = {0: "applied", 3: "rejected_validation", 4: "rejected_approval"}
+GENERATED = ROOT / "generated"
+META_KEYS = ("model", "digest", "ollama_version", "temperature", "seed", "prompt_version")
 
 
 def git(*args):
@@ -49,13 +55,45 @@ def candidates_for(scenario, kind):
         out.append(None)  # None = 정답 룰셋 (mock)
     if kind in ("mutations", "all"):
         out += sorted(glob.glob(str(ROOT / "mutations" / f"{name}-*.json")))
+    if kind in ("generated", "all"):
+        out += sorted(f for f in glob.glob(str(GENERATED / f"{name}-*.json")) if not f.endswith(".meta.json"))
     return out
+
+
+def is_generated(cand):
+    return cand is not None and Path(cand).resolve().parent == GENERATED.resolve()
+
+
+def _rel(path):
+    """메시지용 경로. 저장소 밖이면 절대 경로 그대로."""
+    try:
+        return Path(path).resolve().relative_to(ROOT.resolve())
+    except ValueError:
+        return path
+
+
+def load_meta(cand):
+    """generated 후보의 meta. 없거나 필드가 빠지면 ValueError."""
+    path = Path(cand[: -len(".json")] + ".meta.json")
+    if not path.exists():
+        raise ValueError(f"meta 없음: {_rel(path)}")
+    meta = json.loads(path.read_text(encoding="utf-8"))
+    missing = [k for k in META_KEYS if k not in meta]
+    if missing:
+        raise ValueError(f"meta 필드 누락 {missing}: {_rel(path)}")
+    return meta
+
+
+def generator_label(meta):
+    """CSV generator 열에 들어갈 값. 쉼표 없이 한 칸에 재현 조건을 모두 담는다."""
+    return (f"{meta['model']}@{str(meta['digest']).split(':')[-1][:12]}|t={meta['temperature']}"
+            f"|seed={meta['seed']}|p={meta['prompt_version']}")
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scenarios", default="scenarios/req-*.json")
-    ap.add_argument("--candidates", choices=["gold", "mutations", "all"], default="all")
+    ap.add_argument("--candidates", choices=["gold", "mutations", "generated", "all"], default="all")
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument("--watch", type=int, default=10)
     ap.add_argument("--approve", choices=["yes", "no"], default="no",
@@ -81,6 +119,16 @@ def main():
     if not scenarios:
         sys.exit(f"시나리오 없음: {args.scenarios}")
 
+    # generated 후보의 meta 를 실행 전에 모두 확인한다. 재현 조건을 모르는 결과는 만들지 않는다
+    metas = {}
+    for scenario in scenarios:
+        for cand in candidates_for(scenario, args.candidates):
+            if is_generated(cand):
+                try:
+                    metas[cand] = load_meta(cand)
+                except ValueError as e:
+                    sys.exit(f"실행 중단: {e}")
+
     for scenario in scenarios:
         for cand in candidates_for(scenario, args.candidates):
             for rep in range(1, args.reps + 1):
@@ -91,6 +139,10 @@ def main():
                            BATCH_ID=stamp, REP=str(rep), COMMIT=manifest["commit"])
                 if cand:
                     env["CANDIDATE"] = cand
+                    if cand in metas:
+                        env["GENERATOR"] = generator_label(metas[cand])
+                    else:
+                        env.pop("GENERATOR", None)
                 else:
                     env.pop("CANDIDATE", None)
                     env["GENERATOR"] = "mock"
@@ -105,6 +157,8 @@ def main():
                     "scenario": Path(scenario).stem, "candidate": label, "rep": rep,
                     "status": status, "out": str(out.relative_to(ROOT)),
                 }
+                if cand in metas:
+                    run["meta"] = metas[cand]
                 if status == "aborted":
                     lines = (res.stderr or res.stdout).strip().splitlines()
                     run["error"] = lines[-1] if lines else f"exit {res.returncode}"

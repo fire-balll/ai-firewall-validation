@@ -82,6 +82,13 @@ class NmapCommandTest(unittest.TestCase):
             with self.subTest(to=to), self.assertRaises(ValueError):
                 probe.command(p)
 
+    def test_port_must_be_single_integer(self):
+        for port in ("80", "80-90", "80,443", 0, 65536, True):
+            p = {"id": "a-x", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": port,
+                 "tool": "nmap"}
+            with self.subTest(port=port), self.assertRaises(ValueError):
+                probe.command(p)
+
     def test_nmap_on_icmp_is_rejected(self):
         p = {"id": "a-003", "from": "attacker", "to": "10.10.20.10", "proto": "icmp", "tool": "nmap"}
         with self.assertRaises(ValueError):

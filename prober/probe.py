@@ -124,6 +124,9 @@ def command(p):
     if p["proto"] == "tcp" and tool == "nmap":
         if ipaddress.ip_address(p["to"]) not in LAB_NET:
             raise ValueError(f"{p['id']}: nmap 대상은 랩 네트워크({LAB_NET}) 안이어야 함: {p['to']}")
+        # nmap 의 -p 는 "80-90", "80,443" 도 받아 여러 포트를 스캔하므로 단일 포트만 허용한다
+        if type(p["port"]) is not int or not 0 < p["port"] < 65536:
+            raise ValueError(f"{p['id']}: nmap 프로브의 port 는 1-65535 정수여야 함: {p['port']!r}")
         # -Pn: 호스트 탐색(ping)도 방화벽에 막히므로 생략. -n: DNS 조회 안 함. 재전송 1회.
         return tool, ["nmap", "-Pn", "-n", "-sT", "-p", str(p["port"]), "--reason",
                       "--max-retries", "1", "--host-timeout", f"{TIMEOUT_S * 5}s",
@@ -135,7 +138,8 @@ def command(p):
 
 def run_probe(p):
     tool, cmd = command(p)
-    res = exec_in(p["from"], *cmd, timeout=TIMEOUT_S * 5 + 10)
+    # nmap 은 --host-timeout 이 TIMEOUT_S * 5 초라 그보다 길게 기다린다
+    res = exec_in(p["from"], *cmd, timeout=(TIMEOUT_S * 5 if tool == "nmap" else TIMEOUT_S) + 10)
     observed = observe(tool, res, p.get("port"))
     if observed is None:
         lines = res.stderr.strip().splitlines()

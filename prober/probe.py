@@ -122,7 +122,11 @@ def command(p):
                       "--connect-timeout", str(TIMEOUT_S), "-m", str(TIMEOUT_S + 3),
                       f"http://{p['to']}:{p['port']}/"]
     if p["proto"] == "tcp" and tool == "nmap":
-        if ipaddress.ip_address(p["to"]) not in LAB_NET:
+        try:
+            to = ipaddress.ip_address(p["to"])
+        except ValueError:
+            raise ValueError(f"{p['id']}: nmap 대상은 IP 여야 함: {p['to']}") from None
+        if to not in LAB_NET:
             raise ValueError(f"{p['id']}: nmap 대상은 랩 네트워크({LAB_NET}) 안이어야 함: {p['to']}")
         # nmap 의 -p 는 "80-90", "80,443" 도 받아 여러 포트를 스캔하므로 단일 포트만 허용한다
         if type(p["port"]) is not int or not 0 < p["port"] < 65536:

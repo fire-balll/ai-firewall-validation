@@ -5,7 +5,14 @@ import unittest
 
 from prober import probe
 
-HEAD = '<?xml version="1.0" encoding="UTF-8"?>\n<nmaprun scanner="nmap" version="7.93" xmloutputversion="1.05">\n'
+# lab 이미지의 nmap -oX - 출력 머리 그대로 (DOCTYPE, xml-stylesheet, 주석 포함)
+HEAD = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<!DOCTYPE nmaprun>\n'
+        '<?xml-stylesheet href="file:///usr/bin/../share/nmap/nmap.xsl" type="text/xsl"?>\n'
+        '<!-- Nmap 7.93 scan initiated Wed Oct 14 07:13:36 2026 as: nmap -Pn -n -sT -p 80 -&#45;reason '
+        '-&#45;max-retries 1 -&#45;host-timeout 10s -oX - 10.10.30.10 -->\n'
+        '<nmaprun scanner="nmap" version="7.93" xmloutputversion="1.05">\n'
+        '<scaninfo type="connect" protocol="tcp" numservices="1" services="80"/>\n')
 TAIL = '<runstats><finished exit="success"/><hosts up="{up}" down="0" total="{up}"/></runstats>\n</nmaprun>\n'
 
 
@@ -81,6 +88,11 @@ class NmapCommandTest(unittest.TestCase):
             p = {"id": "a-x", "from": "attacker", "to": to, "proto": "tcp", "port": 80, "tool": "nmap"}
             with self.subTest(to=to), self.assertRaises(ValueError):
                 probe.command(p)
+
+    def test_target_must_be_ip_with_probe_id_in_message(self):
+        p = {"id": "a-x", "from": "attacker", "to": "web", "proto": "tcp", "port": 80, "tool": "nmap"}
+        with self.assertRaisesRegex(ValueError, r"^a-x: nmap 대상은 IP 여야 함: web$"):
+            probe.command(p)
 
     def test_port_must_be_single_integer(self):
         for port in ("80", "80-90", "80,443", 0, 65536, True):

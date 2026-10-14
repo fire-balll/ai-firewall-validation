@@ -42,6 +42,12 @@ class NmapObserveTest(unittest.TestCase):
         res = done(HEAD + TAIL.format(up=0), stderr="WARNING: No targets were specified, so 0 hosts scanned.\n")
         self.assertIsNone(probe.observe("nmap", res, 80))
 
+    def test_host_timeout_is_failure(self):
+        # --host-timeout 초과: 종료 코드 0, exit="success" 지만 <host timedout="true"> 에 <ports> 가 없다
+        res = done(HEAD + '<host timedout="true"><status state="up" reason="user-set" reason_ttl="0"/>\n'
+                   + '<address addr="10.10.30.10" addrtype="ipv4"/>\n</host>\n' + TAIL.format(up=1))
+        self.assertIsNone(probe.observe("nmap", res, 8080))
+
     def test_other_port_in_output_is_failure(self):
         self.assertIsNone(probe.observe("nmap", done(nmap_xml(80, "open", "syn-ack")), 8080))
 

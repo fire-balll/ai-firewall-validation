@@ -54,7 +54,7 @@ CURL_BLOCKED = "Timeout was reached"
 #   open/syn-ack, closed/conn-refused: 방화벽은 허용 (closed 는 nc 의 Connection refused 와 같음)
 #   filtered/no-response: 방화벽 drop
 #   filtered/host-unreach 등 그 밖의 reason: reject·ICMP 오류라 drop 이 아니다 → 실행 실패
-#   <port> 없음(경로 없음, 주소 오류, host timeout), XML 아님(podman exec 실패 등): 실행 실패
+#   <host> 없음(경로 없음, 주소 오류), <host timedout="true">, <port> 없음, XML 아님(podman exec 실패 등): 실행 실패
 # -sT(connect 스캔)를 쓴다. -sS 는 raw 소켓이 필요해 권한 없는 컨테이너에서 "dnet: Failed to open device" 로 실패한다.
 NMAP_ALLOW = {("open", "syn-ack"), ("closed", "conn-refused")}
 NMAP_BLOCK = {("filtered", "no-response")}
@@ -67,7 +67,7 @@ def nmap_state(stdout, port):
     except ET.ParseError:
         return None
     hosts = root.findall("host")
-    if len(hosts) != 1:
+    if len(hosts) != 1 or hosts[0].get("timedout") == "true":
         return None
     ports = hosts[0].findall(f"ports/port[@protocol='tcp'][@portid='{port}']")
     if len(ports) != 1:

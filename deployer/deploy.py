@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from common.ir import load_json, to_nft  # noqa: E402
+from common.ir import load_json, stateful_for, to_nft  # noqa: E402
 from common.lab import FW, exec_in, require_lab  # noqa: E402
 
 
@@ -58,9 +58,12 @@ def main():
     ap.add_argument("--scenario", required=True)
     ap.add_argument("--watch", type=int, default=60, help="감시 기간(초)")
     ap.add_argument("--interval", type=int, default=5, help="프로브 간격(초)")
+    ap.add_argument("--stateless", action="store_true",
+                    help="상태 추적 룰 없이 적용 (오류 주입 state 유형). 생략 시 후보 파일명으로 판단")
     args = ap.parse_args()
 
-    out = {"applied": False, "rolled_back": False, "aborted": False, "error": None,
+    stateful = not args.stateless and stateful_for(args.ruleset)
+    out = {"stateful": stateful, "applied": False, "rolled_back": False, "aborted": False, "error": None,
            "t_apply": None, "t_detect": None, "t_restored": None,
            "detect_s": None, "mttr_s": None, "probe": None}
 
@@ -68,7 +71,7 @@ def main():
     try:
         require_lab()  # 랩이 온전하지 않으면 후보 룰을 적용조차 하지 않는다
         saved = snapshot()
-        nft_apply(to_nft(load_json(args.ruleset)))  # nft -f 는 원자적이라 실패하면 아무것도 바뀌지 않는다
+        nft_apply(to_nft(load_json(args.ruleset), stateful=stateful))  # nft -f 는 원자적이라 실패하면 아무것도 바뀌지 않는다
     except Exception as e:
         out["aborted"] = True
         out["error"] = f"{type(e).__name__}: {e}"

@@ -62,7 +62,21 @@ if [[ "$risk" == high ]]; then
   approved=yes
 fi
 
-if ! python3 deployer/deploy.py "$OUT/candidate.json" --scenario "$SCENARIO" --watch "$WATCH" > "$OUT/deploy.json"; then
+# candidate.json 으로 복사하면 파일명이 사라지므로, 상태 추적 여부는 원래 파일명으로 여기서 넘긴다.
+# 판단 규칙은 common.ir.stateful_for 한 곳에만 둔다
+# 판단 결과는 종료 코드가 아니라 출력으로 받는다. 파이썬이 실행에 실패하면(모듈 없음 등)
+# 종료 코드만으로는 "stateless" 와 구분되지 않기 때문이다. 실패하면 set -e·ERR trap 으로 실행 실패(1)
+deploy_args=()
+if [[ -n "$CANDIDATE" ]]; then
+  mode=$(python3 -c 'import sys; from common.ir import stateful_for; print("stateful" if stateful_for(sys.argv[1]) else "stateless")' "$CANDIDATE")
+  if [[ "$mode" == stateless ]]; then
+    deploy_args+=(--stateless)
+  elif [[ "$mode" != stateful ]]; then
+    echo "상태 추적 판단 실패: '$mode'" >&2
+    exit 1
+  fi
+fi
+if ! python3 deployer/deploy.py "$OUT/candidate.json" --scenario "$SCENARIO" --watch "$WATCH" "${deploy_args[@]+"${deploy_args[@]}"}" > "$OUT/deploy.json"; then
   # 실행 실패는 실험 결과가 아니므로 CSV 에 기록하지 않는다
   echo "적용 중 실행 실패: 원복 후 중단 ($OUT/deploy.json)" >&2
   exit 1

@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from common.ir import load_json, to_nft  # noqa: E402
+from common.ir import load_json, stateful_for, to_nft  # noqa: E402
 from common.lab import FW, exec_in, require_lab  # noqa: E402
 from common.sim import simulate  # noqa: E402
 
@@ -31,6 +31,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scenario", required=True)
     ap.add_argument("--ruleset", help="생략하면 시나리오의 정답 룰셋")
+    ap.add_argument("--stateless", action="store_true",
+                    help="상태 추적 룰 없이 적용. 생략 시 --ruleset 파일명으로 판단")
     args = ap.parse_args()
 
     scenario = load_json(args.scenario)
@@ -41,7 +43,8 @@ def main():
         sys.exit(f"nft list 실패: {snap.stderr.strip()}")
     saved = "flush ruleset\n" + snap.stdout
 
-    nft_apply(to_nft(ruleset))
+    stateful = not args.stateless and (stateful_for(args.ruleset) if args.ruleset else True)
+    nft_apply(to_nft(ruleset, stateful=stateful))
     try:
         require_lab()
         res = subprocess.run([sys.executable, str(ROOT / "prober" / "probe.py"), args.scenario],
@@ -59,7 +62,7 @@ def main():
         {"id": r["id"], "sim": r["observed"], "lab": lab_by_id.get(r["id"])}
         for r in sim["results"] if r["observed"] != lab_by_id.get(r["id"])
     ]
-    json.dump({"agree": not mismatches, "mismatches": mismatches, "sim": sim, "lab": lab},
+    json.dump({"stateful": stateful, "agree": not mismatches, "mismatches": mismatches, "sim": sim, "lab": lab},
               sys.stdout, ensure_ascii=False, indent=2)
     print()
     sys.exit(0 if not mismatches else 2)

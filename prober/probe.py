@@ -4,21 +4,25 @@
 tcpreplay 는 쓰지 않는다: 상태 기반 방화벽에서 handshake 없는 재생은 차단으로 오측정된다.
 방화벽 판정을 잰다: 서버의 포트가 닫혀 있어도 방화벽이 통과시켰으면(Connection refused) allow 다.
 
-현재 구현: tcp(nc -vz, 프로브에 "tool": "curl" 이면 HTTP 요청), icmp(ping)
-방화벽 drop 으로 확실한 경우(nc·curl 연결 단계 timeout, ping 응답 없음)만 block 으로 판정한다.
+현재 구현: tcp(nc -vz, 프로브에 "tool": "curl" 이면 HTTP 요청, "tool": "nmap" 이면 포트 스캔), icmp(ping)
+방화벽 drop 으로 확실한 경우(nc·curl 연결 단계 timeout, nmap filtered/no-response, ping 응답 없음)만
+block 으로 판정한다.
 그 외 실패(컨테이너 꺼짐, 명령 없음, 주소 오류, 경로 없음 등)는 실행 실패로 보고
 결과를 내지 않고 종료 코드 1 로 끝낸다. 실험 결과에 섞이지 않게 하기 위함.
-종료 코드·메시지는 lab/Containerfile 이미지(debian bookworm netcat-openbsd, iputils-ping, curl 7.88)에서 확인했다.
+종료 코드·메시지는 lab/Containerfile 이미지(debian bookworm netcat-openbsd, iputils-ping, curl 7.88,
+nmap 7.93)에서 확인했다.
 
-TODO: nmap 스캔, hping3 SYN 프로브(속도 제한 필수), 실패 사유 상세화
+TODO: hping3 SYN 프로브(속도 제한 필수), 실패 사유 상세화
 
 출력: {"results": [{"id", "kind", "expect", "observed", "pass"}...]}
 사용: probe.py scenarios/req-001.json > out/probe.json
 """
 
 import argparse
+import ipaddress
 import json
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -26,6 +30,9 @@ from common.ir import load_json  # noqa: E402
 from common.lab import exec_in  # noqa: E402
 
 TIMEOUT_S = 2
+
+# 공격 도구(nmap)는 랩 네트워크 안에서만 쓴다 (AGENTS.md 실험과 보안 규칙)
+LAB_NET = ipaddress.ip_network("10.10.0.0/16")
 
 # nc -v 는 사용 오류(주소·포트 오류)와 경로 없음에도 종료 코드 1 을 내므로 메시지로 구분한다.
 #   timed out: 방화벽 drop (IR 의 action 은 accept/drop 뿐이라 reject 는 없다)
@@ -42,12 +49,49 @@ CURL_CONNECTED = "* Connected to "
 CURL_PASSED = "Connection refused"
 CURL_BLOCKED = "Timeout was reached"
 
+# nmap 은 경로 없음·주소 오류에도 종료 코드 0 으로 끝나고 호스트를 하나도 스캔하지 않으므로
+# -oX XML 에서 대상 포트의 state 와 reason 을 읽어 판정한다.
+#   open/syn-ack, closed/conn-refused: 방화벽은 허용 (closed 는 nc 의 Connection refused 와 같음)
+#   filtered/no-response: 방화벽 drop
+#   filtered/host-unreach 등 그 밖의 reason: reject·ICMP 오류라 drop 이 아니다 → 실행 실패
+#   <host> 없음(경로 없음, 주소 오류), <host timedout="true">, <port> 없음, XML 아님(podman exec 실패 등): 실행 실패
+# -sT(connect 스캔)를 쓴다. -sS 는 raw 소켓이 필요해 권한 없는 컨테이너에서 "dnet: Failed to open device" 로 실패한다.
+NMAP_ALLOW = {("open", "syn-ack"), ("closed", "conn-refused")}
+NMAP_BLOCK = {("filtered", "no-response")}
+
+
+def nmap_state(stdout, port):
+    """nmap -oX 출력에서 대상 포트의 (state, reason) 을 찾는다. 없으면 None."""
+    try:
+        root = ET.fromstring(stdout)
+    except ET.ParseError:
+        return None
+    hosts = root.findall("host")
+    if len(hosts) != 1 or hosts[0].get("timedout") == "true":
+        return None
+    ports = hosts[0].findall(f"ports/port[@protocol='tcp'][@portid='{port}']")
+    if len(ports) != 1:
+        return None
+    state = ports[0].find("state")
+    if state is None:
+        return None
+    return state.get("state"), state.get("reason")
+
 
 class ProbeError(Exception):
     """프로브를 실행하지 못함. 허용/차단을 관측한 것이 아니다."""
 
 
-def observe(tool, res):
+def observe(tool, res, port=None):
+    if tool == "nmap":
+        if res.returncode != 0:
+            return None
+        st = nmap_state(res.stdout, port)
+        if st in NMAP_ALLOW:
+            return "allow"
+        if st in NMAP_BLOCK:
+            return "block"
+        return None
     if res.returncode == 0:
         return "allow"
     if tool == "curl":
@@ -77,6 +121,20 @@ def command(p):
         return tool, ["curl", "-sS", "-v", "-o", "/dev/null", "--noproxy", "*",
                       "--connect-timeout", str(TIMEOUT_S), "-m", str(TIMEOUT_S + 3),
                       f"http://{p['to']}:{p['port']}/"]
+    if p["proto"] == "tcp" and tool == "nmap":
+        try:
+            to = ipaddress.ip_address(p["to"])
+        except ValueError:
+            raise ValueError(f"{p['id']}: nmap 대상은 IP 여야 함: {p['to']}") from None
+        if to not in LAB_NET:
+            raise ValueError(f"{p['id']}: nmap 대상은 랩 네트워크({LAB_NET}) 안이어야 함: {p['to']}")
+        # nmap 의 -p 는 "80-90", "80,443" 도 받아 여러 포트를 스캔하므로 단일 포트만 허용한다
+        if type(p["port"]) is not int or not 0 < p["port"] < 65536:
+            raise ValueError(f"{p['id']}: nmap 프로브의 port 는 1-65535 정수여야 함: {p['port']!r}")
+        # -Pn: 호스트 탐색(ping)도 방화벽에 막히므로 생략. -n: DNS 조회 안 함. 재전송 1회.
+        return tool, ["nmap", "-Pn", "-n", "-sT", "-p", str(p["port"]), "--reason",
+                      "--max-retries", "1", "--host-timeout", f"{TIMEOUT_S * 5}s",
+                      "-oX", "-", p["to"]]
     if p["proto"] == "icmp" and tool == "ping":
         return tool, ["ping", "-c", "1", "-W", str(TIMEOUT_S), p["to"]]
     raise ValueError(f"{p['id']}: 지원하지 않는 proto/tool {p['proto']}/{tool}")
@@ -84,8 +142,9 @@ def command(p):
 
 def run_probe(p):
     tool, cmd = command(p)
-    res = exec_in(p["from"], *cmd, timeout=TIMEOUT_S + 10)
-    observed = observe(tool, res)
+    # nmap 은 --host-timeout 이 TIMEOUT_S * 5 초라 그보다 길게 기다린다
+    res = exec_in(p["from"], *cmd, timeout=(TIMEOUT_S * 5 if tool == "nmap" else TIMEOUT_S) + 10)
+    observed = observe(tool, res, p.get("port"))
     if observed is None:
         lines = res.stderr.strip().splitlines()
         raise ProbeError(f"{p['id']}: 프로브 실행 실패 (exit {res.returncode}) "

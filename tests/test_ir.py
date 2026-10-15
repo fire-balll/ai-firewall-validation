@@ -20,10 +20,14 @@ class ToNftTest(unittest.TestCase):
         self.assertNotIn(CT, stateless)
         self.assertEqual(stateful.replace(f"    {CT}\n", ""), stateless)
 
-    def test_stateful_for_uses_file_name_mark(self):
+    def test_stateful_for_only_matches_state_mutation_names(self):
         self.assertFalse(stateful_for("mutations/req-001-state-01.json"))
+        self.assertFalse(stateful_for("/abs/path/req-010-state-12.json"))
         self.assertTrue(stateful_for("mutations/req-001-port-01.json"))
         self.assertTrue(stateful_for("out/req-001/candidate.json"))
+        # 모델 태그에 -state- 가 든 LLM 후보는 상태 추적을 유지해야 한다
+        self.assertTrue(stateful_for("generated/req-001-foo-state-7b-s1.json"))
+        self.assertTrue(stateful_for("generated/req-001-state-7b-s1.json"))
 
 
 if __name__ == "__main__":

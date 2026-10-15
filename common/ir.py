@@ -2,6 +2,7 @@
 
 import ipaddress
 import json
+import re
 from pathlib import Path
 
 from jsonschema import Draft202012Validator
@@ -58,13 +59,18 @@ def sorted_rules(ruleset):
     return sorted(ruleset["rules"], key=lambda r: (r["priority"], r["id"]))
 
 
-# 파일명에 이 표시가 있는 후보는 상태 추적 룰 없이 변환한다 (오류 주입 state 유형, mutations/README.md)
-STATELESS_MARK = "-state-"
+# 이 이름 형식의 후보만 상태 추적 룰 없이 변환한다 (오류 주입 state 유형: <시나리오>-state-<번호>.json).
+# 파일명 어디에든 "-state-" 가 있으면으로 잡으면, 모델 태그에 그 글자가 든 LLM 후보(generated/)가
+# 조용히 stateless 로 적용돼 틀린 결과가 된다 (#23 리뷰)
+STATELESS_NAME = re.compile(r"^req-\d+-state-\d+\.json$")
 
 
 def stateful_for(path):
-    """후보 파일명으로 상태 추적 룰을 넣을지 정한다. IR 에는 이 정보를 담을 필드가 없다."""
-    return STATELESS_MARK not in Path(path).name
+    """후보 파일명으로 상태 추적 룰을 넣을지 정한다. IR 에는 이 정보를 담을 필드가 없다.
+
+    판단은 이 함수 한 곳에서만 한다 (run.sh 도 이 함수를 부른다).
+    """
+    return not STATELESS_NAME.match(Path(path).name)
 
 
 def to_nft(ruleset, stateful=True):

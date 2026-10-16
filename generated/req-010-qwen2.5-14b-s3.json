@@ -1,0 +1,75 @@
+{
+  "scenario": "req-010",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "침해된 기기(10.10.10.66)는 모든 통신을 차단한다",
+      "src": "10.10.10.66/32",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 1
+    },
+    {
+      "id": "r-002",
+      "intent": "PC는 서버의 웹 서비스(80)에 접근할 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 2
+    },
+    {
+      "id": "r-003",
+      "intent": "IoT 기기의 관리 페이지(80)는 PC에서만 접근할 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.10.10/32",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 3
+    },
+    {
+      "id": "r-004",
+      "intent": "IoT 망의 기기는 서버의 업데이트 포트(8080)에 접근할 수 있다",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 4
+    },
+    {
+      "id": "r-005",
+      "intent": "PC는 IoT 망과 서버 망에 ping 할 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.10.0/24",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 5
+    },
+    {
+      "id": "r-006",
+      "intent": "PC는 IoT 망과 서버 망에 ping 할 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.0/24",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 6
+    },
+    {
+      "id": "r-007",
+      "intent": "그 밖의 IoT 발 통신은 모두 막는다",
+      "src": "10.10.10.0/24",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 7
+    }
+  ]
+}

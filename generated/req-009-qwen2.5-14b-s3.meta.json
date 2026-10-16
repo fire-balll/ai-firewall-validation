@@ -1,0 +1,24 @@
+{
+  "model": "qwen2.5:14b",
+  "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+  "ollama_version": "0.40.3",
+  "temperature": 0.7,
+  "seed": 3,
+  "prompt_version": "v1",
+  "scenario": "req-009",
+  "options": {
+    "temperature": 0.7,
+    "seed": 3,
+    "num_ctx": 8192
+  },
+  "time": "2026-10-16T09:59:48+00:00",
+  "attempts": [
+    {
+      "done_reason": "stop",
+      "prompt_eval_count": 692,
+      "eval_count": 315,
+      "total_duration_ns": 25330365625,
+      "problems": []
+    }
+  ]
+}

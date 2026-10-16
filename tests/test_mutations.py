@@ -5,7 +5,7 @@ import re
 import unittest
 from pathlib import Path
 
-from common.ir import ROOT, load_json, schema_errors
+from common.ir import ROOT, load_json, schema_errors, stateful_for
 
 MUTATIONS = sorted(glob.glob(str(ROOT / "mutations" / "req-*.json")))
 README = (ROOT / "mutations" / "README.md").read_text(encoding="utf-8")
@@ -35,11 +35,22 @@ class MutationTest(unittest.TestCase):
                 self.assertIn(m.group(2), types)
 
     def test_differs_from_gold(self):
+        """state 유형은 IR 이 정답과 같아야 한다. 오류는 파일명으로만 주입한다 (README 의 state 유형)."""
         for path in MUTATIONS:
             mutant = load_json(path)
             with self.subTest(file=Path(path).name):
                 gold = load_json(ROOT / "scenarios" / f"{mutant['scenario']}.json")["gold"]
-                self.assertNotEqual(mutant["rules"], gold["rules"])
+                if NAME.match(Path(path).name).group(2) == "state":
+                    self.assertEqual(mutant["rules"], gold["rules"])
+                else:
+                    self.assertNotEqual(mutant["rules"], gold["rules"])
+
+    def test_only_state_files_are_stateless(self):
+        """변환기가 state 파일만 상태 추적 없이 적용하는지. 아니면 state 후보가 정답과 똑같이 적용된다."""
+        for path in MUTATIONS:
+            name = Path(path).name
+            with self.subTest(file=name):
+                self.assertEqual(stateful_for(path), NAME.match(name).group(2) != "state")
 
     def test_listed_in_readme(self):
         for path in MUTATIONS:

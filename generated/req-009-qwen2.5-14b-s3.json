@@ -1,0 +1,35 @@
+{
+  "scenario": "req-009",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "PC는 서버의 개발 포트 대역(8000-8100)만 서버로 향하는 연결을 만들 수 있다.",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "8000-8100",
+      "action": "accept",
+      "priority": 1
+    },
+    {
+      "id": "r-002",
+      "intent": "PC는 서버의 80 포트로 향하는 모든 연결을 차단한다.",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "drop",
+      "priority": 2
+    },
+    {
+      "id": "r-003",
+      "intent": "기타 모든 연결을 차단한다.",
+      "src": "any",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 3
+    }
+  ]
+}

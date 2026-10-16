@@ -1,0 +1,35 @@
+{
+  "scenario": "req-008",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "PC에서 IoT 망으로 ping을 보낼 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.10.0/24",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 0
+    },
+    {
+      "id": "r-002",
+      "intent": "PC에서 서버 망으로 ping을 보낼 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.0/24",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 1
+    },
+    {
+      "id": "r-003",
+      "intent": "IoT 기기가 어디에도 ping을 보낼 수 없다",
+      "src": "10.10.10.0/24",
+      "dst": "any",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "drop",
+      "priority": 2
+    }
+  ]
+}

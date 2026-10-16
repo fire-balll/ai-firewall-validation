@@ -1,0 +1,45 @@
+{
+  "scenario": "req-001",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "PC가 서버의 웹 서비스(80)에 접근할 수 있다.",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 1
+    },
+    {
+      "id": "r-002",
+      "intent": "PC가 IoT 기기의 관리 페이지(80)에 접근할 수 있다.",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.10.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 2
+    },
+    {
+      "id": "r-003",
+      "intent": "IoT 기기는 내부 PC와 서버에 먼저 접속할 수 없다.",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.20.0/24",
+      "proto": "tcp",
+      "dport": "any",
+      "action": "drop",
+      "priority": 3
+    },
+    {
+      "id": "r-004",
+      "intent": "IoT 기기는 내부 PC와 서버에 먼저 접속할 수 없다.",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.0/24",
+      "proto": "tcp",
+      "dport": "any",
+      "action": "drop",
+      "priority": 4
+    }
+  ]
+}

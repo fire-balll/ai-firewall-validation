@@ -1,0 +1,34 @@
+{
+  "model": "qwen2.5:14b",
+  "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+  "ollama_version": "0.40.3",
+  "temperature": 0.7,
+  "seed": 1,
+  "prompt_version": "v1",
+  "scenario": "req-001",
+  "options": {
+    "temperature": 0.7,
+    "seed": 1,
+    "num_ctx": 8192
+  },
+  "time": "2026-10-16T09:48:21+00:00",
+  "attempts": [
+    {
+      "done_reason": "stop",
+      "prompt_eval_count": 701,
+      "eval_count": 334,
+      "total_duration_ns": 38994229958,
+      "problems": [
+        "rules/2/dst: '10.10.20.0/24,10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+        "r-003.dst: '10.10.20.0/24,10.10.30.0/24' does not appear to be an IPv4 or IPv6 network"
+      ]
+    },
+    {
+      "done_reason": "stop",
+      "prompt_eval_count": 1198,
+      "eval_count": 425,
+      "total_duration_ns": 36146326291,
+      "problems": []
+    }
+  ]
+}

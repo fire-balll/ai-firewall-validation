@@ -1,0 +1,35 @@
+{
+  "scenario": "req-006",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "Allow HTTP traffic from LAN and IoT network to the server",
+      "src": "any",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 1
+    },
+    {
+      "id": "r-002",
+      "intent": "Allow management traffic from LAN to the server",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 2
+    },
+    {
+      "id": "r-003",
+      "intent": "Block all other traffic",
+      "src": "any",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 3
+    }
+  ]
+}

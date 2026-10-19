@@ -45,7 +45,8 @@ class TopologyTest(unittest.TestCase):
     def test_hosts_from_topology_env(self):
         self.assertEqual(hosts(), {
             "iot-dev": "10.10.10.10", "attacker": "10.10.10.66",
-            "pc": "10.10.20.10", "server": "10.10.30.10",
+            "pc": "10.10.20.10", "pc2": "10.10.20.11", "server": "10.10.30.10",
+            "guest": "10.10.40.10",
         })
 
 

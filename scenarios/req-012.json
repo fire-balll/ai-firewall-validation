@@ -1,0 +1,40 @@
+{
+  "id": "req-012",
+  "description": "예외를 문장 뒤에 쓴다. 문장 순서대로 룰을 쓰면 넓은 drop 이 좁은 accept 를 가린다. order·shadowing 오류용.",
+  "requirements": [
+    "IoT 망에서 나가는 통신은 모두 막는다",
+    "단, IoT 기기(10.10.10.10)는 서버의 웹 서비스(80)에 접속할 수 있다"
+  ],
+  "gold": {
+    "scenario": "req-012",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "단, IoT 기기(10.10.10.10)는 서버의 웹 서비스(80)에 접속할 수 있다",
+        "src": "10.10.10.10/32",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "80",
+        "action": "accept",
+        "priority": 100
+      },
+      {
+        "id": "g-002",
+        "intent": "IoT 망에서 나가는 통신은 모두 막는다",
+        "src": "10.10.10.0/24",
+        "dst": "any",
+        "proto": "any",
+        "dport": "any",
+        "action": "drop",
+        "priority": 110
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "iot-dev", "to": "10.10.20.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-004", "kind": "attack", "from": "iot-dev", "to": "10.10.40.10", "proto": "icmp", "expect": "block" }
+  ]
+}

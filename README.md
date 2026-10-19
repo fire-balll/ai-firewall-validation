@@ -75,11 +75,13 @@ python3 pipeline/batch.py --candidates all --reps 3 --watch 10 --approve no
 
 | 컨테이너 | 네트워크 | IP | 역할 |
 | --- | --- | --- | --- |
-| fw | net-iot, net-lan, net-svc | 10.10.{10,20,30}.254 | nftables 방화벽 (검증 대상) |
+| fw | net-iot, net-lan, net-svc, net-guest | 10.10.{10,20,30,40}.254 | nftables 방화벽 (검증 대상) |
 | iot-dev | net-iot | 10.10.10.10 | IoT 기기, 관리 페이지 :80 |
 | attacker | net-iot | 10.10.10.66 | 침해된 IoT 가정, 공격 프로브 |
 | pc | net-lan | 10.10.20.10 | 내부 PC |
+| pc2 | net-lan | 10.10.20.11 | 두 번째 PC ("PC 한 대만" 같은 /32 요구사항의 범위 확대 확인용) |
 | server | net-svc | 10.10.30.10 | 웹 :80, :8080 |
+| guest | net-guest | 10.10.40.10 | 게스트 Wi-Fi 망. 허용 대상이 아닌 망에서 오는 트래픽 확인용 (출발지·목적지를 any 로 넓힌 오류) |
 
 ## 규칙
 

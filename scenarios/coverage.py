@@ -14,6 +14,9 @@
   missed      랩에서 보낼 수 있는 어떤 프로브로도 드러나지 않는다 (랩 호스트·네트워크가 부족)
   uncovered   랩 프로브로 드러낼 수 있는데 시나리오에 그 프로브가 없다 -> suggest 에 추가 후보
 
+state 유형(응답 트래픽 누락)은 IR 이 정답과 같아 시뮬레이터로 만들 수 없으므로 여기서 다루지 않는다.
+equivalent 로도 세지 않는다. 동적 검증만 잡는 오류로 따로 센다 (mutations/README.md).
+
 출력: {"scenarios": [{"id", "mutants", "caught", "equivalent": [...], "uncovered": [...], "missed": [...],
                      "suggest": [...]}]}
 사용: coverage.py [scenarios/req-*.json ...]

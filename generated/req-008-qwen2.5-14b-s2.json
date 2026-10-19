@@ -9,7 +9,7 @@
       "proto": "icmp",
       "dport": "any",
       "action": "accept",
-      "priority": 0
+      "priority": 1
     },
     {
       "id": "r-002",
@@ -19,7 +19,7 @@
       "proto": "icmp",
       "dport": "any",
       "action": "accept",
-      "priority": 1
+      "priority": 2
     },
     {
       "id": "r-003",
@@ -29,7 +29,7 @@
       "proto": "icmp",
       "dport": "any",
       "action": "drop",
-      "priority": 2
+      "priority": 3
     }
   ]
 }

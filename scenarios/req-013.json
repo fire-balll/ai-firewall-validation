@@ -1,0 +1,54 @@
+{
+  "id": "req-013",
+  "description": "포트 숫자 없이 서비스 이름만 준다(HTTP=80, SSH=22). 서비스 이름을 포트로 바꾸는 단계를 본다. port 오류용. 서버가 22 를 듣지 않아도 Connection refused 면 방화벽 허용으로 판정한다 (#7).",
+  "requirements": [
+    "PC는 서버의 웹(HTTP)과 SSH 를 쓸 수 있다",
+    "IoT 기기는 서버의 웹(HTTP)만 쓸 수 있다"
+  ],
+  "gold": {
+    "scenario": "req-013",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "PC는 서버의 웹(HTTP)과 SSH 를 쓸 수 있다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "80",
+        "action": "accept",
+        "priority": 100
+      },
+      {
+        "id": "g-002",
+        "intent": "PC는 서버의 웹(HTTP)과 SSH 를 쓸 수 있다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "22",
+        "action": "accept",
+        "priority": 110
+      },
+      {
+        "id": "g-003",
+        "intent": "IoT 기기는 서버의 웹(HTTP)만 쓸 수 있다",
+        "src": "10.10.10.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "80",
+        "action": "accept",
+        "priority": 120
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "allow" },
+    { "id": "n-002", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 22, "expect": "allow" },
+    { "id": "n-003", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 22, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "guest", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-004", "kind": "attack", "from": "iot-dev", "to": "10.10.20.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-005", "kind": "attack", "from": "pc", "to": "10.10.10.10", "proto": "tcp", "port": 22, "expect": "block" },
+    { "id": "a-006", "kind": "attack", "from": "pc", "to": "10.10.10.10", "proto": "tcp", "port": 80, "expect": "block" }
+  ]
+}

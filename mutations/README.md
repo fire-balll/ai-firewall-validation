@@ -14,7 +14,7 @@
 
 | 유형 | 바꾸는 것 | 예시 | 결과 | 정적 검증으로 잡히나 (가설) | 적용할 시나리오 |
 | --- | --- | --- | --- | --- | --- |
-| order | priority 순서 | 좁은 drop 과 넓은 accept 의 순서를 뒤집음 | 과허용 | 이상 탐지(#15)가 들어가면 잡힘. 앞의 accept 와 뒤의 drop 이 일부만 겹치면 correlation, accept 가 drop 을 모두 포함하면 shadowing 으로 둘 다 고위험. 현재 main 의 validator 로는 안 잡힘 | req-004, req-010 |
+| order | priority 순서 | 좁은 drop 과 넓은 accept 의 순서를 뒤집음 | 과허용 | 현재 validator 는 아래 두 order 파일을 correlation/high 로 잡음. 앞의 accept 와 뒤의 drop 이 일부만 겹치면 correlation, accept 가 drop 을 모두 포함하면 shadowing 으로 둘 다 고위험 | req-004, req-010 |
 | widen | src·dst CIDR 확대 | /32 → /24, /24 → /16, → any | 과허용 | /16 보다 넓거나 any 일 때만 잡힘 (고위험 기준). /32 → /24 는 안 잡힘 | req-003, req-005 |
 | port-any | 특정 포트 → any | dport 8080 → any | 과허용 | 잡힘 (모든 포트 accept 고위험 기준) | req-002 |
 | port | 포트 번호 오기 | dport 80 → 8080 | 과허용 + 과차단 | 정답 비교 없이는 안 잡힘 | req-001, req-006 |
@@ -28,6 +28,8 @@
 | state | 응답 트래픽 누락 (상태 추적 룰을 뺌) | 정답 룰셋 그대로, 파일명(`req-NNN-state-NN.json`)으로 `ct state established,related accept` 없이 적용 | 과차단 (새 연결이 성립하지 않음) | 안 잡힘. IR 이 정답과 같아서 정적 검증과 시뮬레이터로는 원리상 못 잡는다 | 전체 (req-001~010) |
 
 "가설" 열이 실제로 맞는지 확인하는 것이 실험의 핵심 질문이다. 가설은 문서 2-2 의 고위험 기준과 계획된 이상 탐지 4종을 기준으로 적었고, 유형별 예시 하나씩을 현재 `validator/validate.py` 에 넣어 order·action 칸을 고쳤다. 첫 실험 결과를 커밋한 뒤에는 이 표의 유형을 바꾸지 않는다(`AGENTS.md`).
+
+2026-10-19 대조: `45b2ee6`의 validator·시뮬레이터로 기존 비-state 16개를 실행하면 모두 `ok=true`, `high` 7개·`low` 9개다. 아래 order 두 행과 설명은 이 관측에 맞춘 정정이며 오류 유형 목록은 그대로다. 정적 경고와 정답 대비 정책 차이는 구분한다. 범위·state 모드·교체 전후 비교 설계는 `docs/validator-week2-hypothesis-design.md`를 참고한다.
 
 ### state 유형
 
@@ -51,7 +53,7 @@ IR 에는 상태 추적 룰을 끌 필드가 없어서, state 후보는 **IR 이
 | req-003-state-01.json | req-003 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001) |
 | req-003-widen-01.json | req-003 | widen | g-001 의 src 10.10.10.10/32 → 10.10.10.0/24 | low | a-001 |
 | req-004-action-01.json | req-004 | action | g-001(침해 기기 차단)의 action drop → accept | high | a-001, a-002 |
-| req-004-order-01.json | req-004 | order | g-001(drop, 100) 과 g-002(accept, 110) 의 priority 를 맞바꿈 | low | a-001 |
+| req-004-order-01.json | req-004 | order | g-001(drop, 100) 과 g-002(accept, 110) 의 priority 를 맞바꿈 | high | a-001 |
 | req-004-state-01.json | req-004 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001) |
 | req-005-state-01.json | req-005 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001) |
 | req-005-widen-01.json | req-005 | widen | g-001 의 src 10.10.20.0/24 → any | high | a-001 |
@@ -67,5 +69,5 @@ IR 에는 상태 추적 룰을 끌 필드가 없어서, state 후보는 **IR 이
 | req-009-state-01.json | req-009 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
 | req-010-action-01.json | req-010 | action | g-003(PC → IoT 관리 페이지) 의 action accept → drop | low | n-002 |
 | req-010-extra-01.json | req-010 | extra | x-001(any → any, proto any, accept, priority 200) 추가 | high | a-003~a-005 (#13 이후 a-006~a-010 도) |
-| req-010-order-01.json | req-010 | order | g-001(침해 기기 drop, 100) 과 g-004(IoT → 서버 8080 accept, 130) 의 priority 를 맞바꿈 | low | a-001 |
+| req-010-order-01.json | req-010 | order | g-001(침해 기기 drop, 100) 과 g-004(IoT → 서버 8080 accept, 130) 의 priority 를 맞바꿈 | high | a-001 |
 | req-010-state-01.json | req-010 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-005) |

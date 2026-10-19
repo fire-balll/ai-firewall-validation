@@ -1,0 +1,25 @@
+{
+  "scenario": "req-004",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "침해된 기기 10.10.10.66은 모든 통신을 차단합니다.",
+      "src": "10.10.10.66/32",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 0
+    },
+    {
+      "id": "r-002",
+      "intent": "IoT 망의 기기는 서버의 업데이트 포트(8080)에 접근할 수 있습니다.",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 1
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "scenario": "req-002",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "IoT 기기들이 서버의 업데이트 포트(8080)에 접속할 수 있다.",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 1
+    },
+    {
+      "id": "r-002",
+      "intent": "IoT 기기들이 서버의 다른 포트나 내부 PC에 접속하지 못하도록 차단한다.",
+      "src": "10.10.10.0/24",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 2
+    }
+  ]
+}

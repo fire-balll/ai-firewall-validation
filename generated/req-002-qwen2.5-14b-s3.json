@@ -3,23 +3,23 @@
   "rules": [
     {
       "id": "r-001",
-      "intent": "허용되지 않은 모든 트래픽을 차단",
-      "src": "any",
-      "dst": "any",
-      "proto": "any",
-      "dport": "any",
-      "action": "drop",
-      "priority": 100
-    },
-    {
-      "id": "r-002",
-      "intent": "IoT 기기가 서버의 업데이트 포트(8080)에 접속할 수 있도록 허용",
+      "intent": "허용하는 최소한의 트래픽만 허용하고 나머지는 모두 차단",
       "src": "10.10.10.0/24",
       "dst": "10.10.30.10",
       "proto": "tcp",
       "dport": "8080",
       "action": "accept",
       "priority": 1
+    },
+    {
+      "id": "r-002",
+      "intent": "IoT 기기의 다른 모든 트래픽을 차단",
+      "src": "10.10.10.0/24",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 2
     }
   ]
 }

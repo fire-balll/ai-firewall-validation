@@ -3,7 +3,7 @@
   "rules": [
     {
       "id": "r-001",
-      "intent": "PC에서 IoT 망으로 ping 가능",
+      "intent": "PC에서 IoT 망으로 ping 보낼 수 있도록",
       "src": "10.10.20.0/24",
       "dst": "10.10.10.0/24",
       "proto": "icmp",
@@ -13,7 +13,7 @@
     },
     {
       "id": "r-002",
-      "intent": "PC에서 서버망으로 ping 가능",
+      "intent": "PC에서 서버 망으로 ping 보낼 수 있도록",
       "src": "10.10.20.0/24",
       "dst": "10.10.30.0/24",
       "proto": "icmp",
@@ -23,7 +23,7 @@
     },
     {
       "id": "r-003",
-      "intent": "IoT 기기에서 어디에도 ping 불가능",
+      "intent": "IoT 기기에서 어디에도 ping 보낼 수 없도록",
       "src": "10.10.10.0/24",
       "dst": "any",
       "proto": "icmp",

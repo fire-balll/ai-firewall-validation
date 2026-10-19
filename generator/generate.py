@@ -46,7 +46,7 @@ def _load_env_file(path=ROOT / ".env"):
 
 _load_env_file()
 DEFAULT_MODEL = os.environ.get("GEN_MODEL", "qwen2.5:14b")
-DEFAULT_PROMPT = os.environ.get("GEN_PROMPT", "v1")
+DEFAULT_PROMPT = os.environ.get("GEN_PROMPT", "v2")
 # temperature 0 이면 seed 를 바꿔도 출력이 같아 반복의 의미가 없다 (generated/README.md)
 DEFAULT_TEMPERATURE = 0.7
 # Ollama 기본 컨텍스트는 버전마다 다르고 넘치면 프롬프트 앞부분을 조용히 자른다. 고정하고 meta 에 남긴다

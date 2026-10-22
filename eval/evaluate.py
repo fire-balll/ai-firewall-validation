@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """실행 1회의 결과를 CSV 한 줄로 기록한다. (담당: 강윤서)
 
-현재 구현: 정상 통과율, 공격 차단율, 롤백 여부, MTTR
+현재 구현: 정상 통과율, 공격 차단율, 롤백 여부, MTTR, 상태 추적 여부
 TODO: 정답 룰셋 대비 의미 일치율(테스트 패킷 샘플링), 동적 추가 탐지율
 
 사용: evaluate.py --scenario req-001 --generator mock \
@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.ir import load_json  # noqa: E402
 
 RESULTS = Path(__file__).resolve().parent / "results" / "results.csv"
-FIELDS = ["timestamp", "scenario", "generator", "valid", "risk", "approved",
+FIELDS = ["timestamp", "scenario", "generator", "stateful", "valid", "risk", "approved",
           "normal_pass_rate", "attack_block_rate", "rolled_back", "detect_s", "mttr_s"]
 
 
@@ -43,6 +43,9 @@ def main():
         "timestamp": dt.datetime.now().isoformat(timespec="seconds"),
         "scenario": args.scenario,
         "generator": args.generator,
+        # GENERATOR 를 직접 정하면 파일명의 -state- 가 generator 열에 안 남으므로 따로 기록한다.
+        # 검증 반려·승인 거부로 적용하지 않았으면 deploy.json 이 없어 빈 값이다
+        "stateful": d.get("stateful", ""),
         "valid": v["ok"],
         "risk": v["risk"] or "",
         "approved": args.approved,

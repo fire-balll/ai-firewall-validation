@@ -4,15 +4,16 @@
 tcpreplay 는 쓰지 않는다: 상태 기반 방화벽에서 handshake 없는 재생은 차단으로 오측정된다.
 방화벽 판정을 잰다: 서버의 포트가 닫혀 있어도 방화벽이 통과시켰으면(Connection refused) allow 다.
 
-현재 구현: tcp(nc -vz, 프로브에 "tool": "curl" 이면 HTTP 요청, "tool": "nmap" 이면 포트 스캔), icmp(ping)
-방화벽 drop 으로 확실한 경우(nc·curl 연결 단계 timeout, nmap filtered/no-response, ping 응답 없음)만
-block 으로 판정한다.
+현재 구현: tcp(nc -vz, 프로브에 "tool": "curl" 이면 HTTP 요청, "tool": "nmap" 이면 포트 스캔,
+"tool": "hping3" 이면 SYN 1개), icmp(ping)
+방화벽 drop 으로 확실한 경우(nc·curl 연결 단계 timeout, nmap filtered/no-response, hping3 응답 없음,
+ping 응답 없음)만 block 으로 판정한다.
 그 외 실패(컨테이너 꺼짐, 명령 없음, 주소 오류, 경로 없음 등)는 실행 실패로 보고
 결과를 내지 않고 종료 코드 1 로 끝낸다. 실험 결과에 섞이지 않게 하기 위함.
 종료 코드·메시지는 lab/Containerfile 이미지(debian bookworm netcat-openbsd, iputils-ping, curl 7.88,
-nmap 7.93)에서 확인했다.
+nmap 7.93, hping3 3.0.0-alpha-2)에서 확인했다.
 
-TODO: hping3 SYN 프로브(속도 제한 필수), 실패 사유 상세화
+TODO: 실패 사유 상세화
 
 출력: {"results": [{"id", "kind", "expect", "observed", "pass"}...]}
 사용: probe.py scenarios/req-001.json > out/probe.json
@@ -21,6 +22,7 @@ TODO: hping3 SYN 프로브(속도 제한 필수), 실패 사유 상세화
 import argparse
 import ipaddress
 import json
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -59,6 +61,24 @@ CURL_BLOCKED = "Timeout was reached"
 NMAP_ALLOW = {("open", "syn-ack"), ("closed", "conn-refused")}
 NMAP_BLOCK = {("filtered", "no-response")}
 
+# hping3 -S -c 1 은 SYN 하나를 보내고 1초 기다린다. 응답 줄(stdout)과 통계(stderr)로 판정한다.
+#   flags=SA(열림)·flags=RA(닫힘, RST): 방화벽은 허용. 종료 코드 0
+#   "1 packets transmitted, 0 packets received": 방화벽 drop. 종료 코드 1
+#   ICMP 오류(경로 없음 "ICMP Network Unreachable from ...")도 "1 packets received", 종료 코드 0 으로 끝나므로
+#   종료 코드만 보지 않고 대상 ip·포트의 응답 줄을 찾는다. 없으면 실행 실패
+#   이름 해석 실패("Unable to resolve")도 종료 코드 1 이지만 통계 줄이 없어 실행 실패로 남는다
+# -p 는 65535 를 넘으면 조용히 다른 포트로 접히므로(99999 → 34463) 포트를 미리 검사한다.
+# 공격 도구라 대상은 랩 네트워크만, 패킷은 1개(-c 1)에 간격 10ms(-i u10000)로 제한한다. --flood 는 쓰지 않는다.
+HPING_SENT_NONE = "1 packets transmitted, 0 packets received"
+HPING_ALLOW_FLAGS = {"SA", "RA"}
+
+
+def hping_flags(stdout, to, port):
+    """hping3 출력에서 대상의 응답 TCP 플래그를 찾는다. 응답 줄이 정확히 1개가 아니면 None."""
+    pat = re.compile(rf"^len=\d+ ip={re.escape(to)} .*\bsport={port} flags=([A-Z]+) ")
+    found = [m.group(1) for m in map(pat.match, stdout.splitlines()) if m]
+    return found[0] if len(found) == 1 else None
+
 
 def nmap_state(stdout, port):
     """nmap -oX 출력에서 대상 포트의 (state, reason) 을 찾는다. 없으면 None."""
@@ -82,7 +102,13 @@ class ProbeError(Exception):
     """프로브를 실행하지 못함. 허용/차단을 관측한 것이 아니다."""
 
 
-def observe(tool, res, port=None):
+def observe(tool, res, port=None, to=None):
+    if tool == "hping3":
+        if res.returncode == 0:
+            return "allow" if hping_flags(res.stdout, to, port) in HPING_ALLOW_FLAGS else None
+        if res.returncode == 1 and HPING_SENT_NONE in res.stderr and "len=" not in res.stdout:
+            return "block"
+        return None
     if tool == "nmap":
         if res.returncode != 0:
             return None
@@ -112,6 +138,20 @@ def observe(tool, res, port=None):
     return None
 
 
+def check_attack_target(p, tool):
+    """공격 도구(nmap·hping3) 프로브의 대상과 포트를 검사한다. 어기면 ValueError."""
+    try:
+        to = ipaddress.ip_address(p["to"])
+    except ValueError:
+        raise ValueError(f"{p['id']}: {tool} 대상은 IP 여야 함: {p['to']}") from None
+    if to not in LAB_NET:
+        raise ValueError(f"{p['id']}: {tool} 대상은 랩 네트워크({LAB_NET}) 안이어야 함: {p['to']}")
+    # nmap 의 -p 는 "80-90", "80,443" 도 받아 여러 포트를 스캔하고, hping3 의 -p 는 65535 를 넘으면 접히므로
+    # 단일 포트만 허용한다
+    if type(p["port"]) is not int or not 0 < p["port"] < 65536:
+        raise ValueError(f"{p['id']}: {tool} 프로브의 port 는 1-65535 정수여야 함: {p['port']!r}")
+
+
 def command(p):
     tool = p.get("tool", "nc" if p["proto"] == "tcp" else "ping")
     if p["proto"] == "tcp" and tool == "nc":
@@ -121,16 +161,12 @@ def command(p):
         return tool, ["curl", "-sS", "-v", "-o", "/dev/null", "--noproxy", "*",
                       "--connect-timeout", str(TIMEOUT_S), "-m", str(TIMEOUT_S + 3),
                       f"http://{p['to']}:{p['port']}/"]
+    if p["proto"] == "tcp" and tool in ("nmap", "hping3"):
+        check_attack_target(p, tool)
+    if p["proto"] == "tcp" and tool == "hping3":
+        # -S: SYN 만. -n: DNS 조회 안 함. -c 1: 패킷 1개
+        return tool, ["hping3", "-S", "-n", "-c", "1", "-i", "u10000", "-p", str(p["port"]), p["to"]]
     if p["proto"] == "tcp" and tool == "nmap":
-        try:
-            to = ipaddress.ip_address(p["to"])
-        except ValueError:
-            raise ValueError(f"{p['id']}: nmap 대상은 IP 여야 함: {p['to']}") from None
-        if to not in LAB_NET:
-            raise ValueError(f"{p['id']}: nmap 대상은 랩 네트워크({LAB_NET}) 안이어야 함: {p['to']}")
-        # nmap 의 -p 는 "80-90", "80,443" 도 받아 여러 포트를 스캔하므로 단일 포트만 허용한다
-        if type(p["port"]) is not int or not 0 < p["port"] < 65536:
-            raise ValueError(f"{p['id']}: nmap 프로브의 port 는 1-65535 정수여야 함: {p['port']!r}")
         # -Pn: 호스트 탐색(ping)도 방화벽에 막히므로 생략. -n: DNS 조회 안 함. 재전송 1회.
         return tool, ["nmap", "-Pn", "-n", "-sT", "-p", str(p["port"]), "--reason",
                       "--max-retries", "1", "--host-timeout", f"{TIMEOUT_S * 5}s",
@@ -144,7 +180,7 @@ def run_probe(p):
     tool, cmd = command(p)
     # nmap 은 --host-timeout 이 TIMEOUT_S * 5 초라 그보다 길게 기다린다
     res = exec_in(p["from"], *cmd, timeout=(TIMEOUT_S * 5 if tool == "nmap" else TIMEOUT_S) + 10)
-    observed = observe(tool, res, p.get("port"))
+    observed = observe(tool, res, p.get("port"), p["to"])
     if observed is None:
         lines = res.stderr.strip().splitlines()
         raise ProbeError(f"{p['id']}: 프로브 실행 실패 (exit {res.returncode}) "

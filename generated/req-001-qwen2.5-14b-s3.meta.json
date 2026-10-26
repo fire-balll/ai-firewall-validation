@@ -4,20 +4,20 @@
   "ollama_version": "0.40.3",
   "temperature": 0.7,
   "seed": 3,
-  "prompt_version": "v1",
+  "prompt_version": "v2",
   "scenario": "req-001",
   "options": {
     "temperature": 0.7,
     "seed": 3,
     "num_ctx": 8192
   },
-  "time": "2026-10-16T09:50:20+00:00",
+  "time": "2026-10-19T11:30:49+00:00",
   "attempts": [
     {
       "done_reason": "stop",
-      "prompt_eval_count": 701,
+      "prompt_eval_count": 737,
       "eval_count": 339,
-      "total_duration_ns": 27538731708,
+      "total_duration_ns": 28090890667,
       "problems": [
         "rules/2/dst: '10.10.20.0/24, 10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
         "r-003.dst: '10.10.20.0/24, 10.10.30.0/24' does not appear to be an IPv4 or IPv6 network"
@@ -25,9 +25,9 @@
     },
     {
       "done_reason": "stop",
-      "prompt_eval_count": 1205,
-      "eval_count": 312,
-      "total_duration_ns": 28294835667,
+      "prompt_eval_count": 1241,
+      "eval_count": 425,
+      "total_duration_ns": 38420731666,
       "problems": []
     }
   ]

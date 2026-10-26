@@ -3,33 +3,43 @@
   "rules": [
     {
       "id": "r-001",
-      "intent": "허용되지 않은 모든 트래픽을 차단한다.",
+      "intent": "Allow LAN PC to access server's management port (8080)",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 1
+    },
+    {
+      "id": "r-002",
+      "intent": "Allow LAN PC and IoT device to access server's web service (80)",
+      "src": "any",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 2
+    },
+    {
+      "id": "r-003",
+      "intent": "Allow IoT device to access IoT management page (80)",
+      "src": "10.10.10.10",
+      "dst": "10.10.10.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 3
+    },
+    {
+      "id": "r-004",
+      "intent": "Block all other traffic",
       "src": "any",
       "dst": "any",
       "proto": "any",
       "dport": "any",
       "action": "drop",
       "priority": 100
-    },
-    {
-      "id": "r-002",
-      "intent": "서버의 웹 서비스를 PC와 IoT 기기 모두 접근 가능하게 한다.",
-      "src": "any",
-      "dst": "10.10.30.10",
-      "proto": "tcp",
-      "dport": "80",
-      "action": "accept",
-      "priority": 1
-    },
-    {
-      "id": "r-003",
-      "intent": "서버의 관리 포트에 대한 접근을 PC만 허용한다.",
-      "src": "10.10.20.0/24",
-      "dst": "10.10.30.10",
-      "proto": "tcp",
-      "dport": "8080",
-      "action": "accept",
-      "priority": 2
     }
   ]
 }

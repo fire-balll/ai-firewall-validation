@@ -9,7 +9,7 @@
       "proto": "any",
       "dport": "any",
       "action": "drop",
-      "priority": 0
+      "priority": 1
     },
     {
       "id": "r-002",
@@ -19,7 +19,7 @@
       "proto": "tcp",
       "dport": "80",
       "action": "accept",
-      "priority": 1
+      "priority": 2
     },
     {
       "id": "r-003",
@@ -29,7 +29,7 @@
       "proto": "tcp",
       "dport": "80",
       "action": "accept",
-      "priority": 2
+      "priority": 3
     },
     {
       "id": "r-004",
@@ -39,7 +39,7 @@
       "proto": "tcp",
       "dport": "8080",
       "action": "accept",
-      "priority": 3
+      "priority": 4
     },
     {
       "id": "r-005",
@@ -49,7 +49,7 @@
       "proto": "icmp",
       "dport": "any",
       "action": "accept",
-      "priority": 4
+      "priority": 5
     },
     {
       "id": "r-006",
@@ -59,7 +59,7 @@
       "proto": "icmp",
       "dport": "any",
       "action": "accept",
-      "priority": 5
+      "priority": 6
     },
     {
       "id": "r-007",
@@ -69,7 +69,7 @@
       "proto": "any",
       "dport": "any",
       "action": "drop",
-      "priority": 6
+      "priority": 7
     }
   ]
 }

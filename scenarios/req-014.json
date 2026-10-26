@@ -1,0 +1,43 @@
+{
+  "id": "req-014",
+  "description": "범위 허용 안에 한 포트 예외. 예외 drop 이 범위 accept 보다 먼저 매칭돼야 한다. range·order 오류용.",
+  "requirements": [
+    "PC는 서버의 개발 포트 대역(8000-8100)을 쓸 수 있다",
+    "단, 그중 업데이트 포트(8080)는 PC가 쓸 수 없다"
+  ],
+  "gold": {
+    "scenario": "req-014",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "단, 그중 업데이트 포트(8080)는 PC가 쓸 수 없다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8080",
+        "action": "drop",
+        "priority": 100
+      },
+      {
+        "id": "g-002",
+        "intent": "PC는 서버의 개발 포트 대역(8000-8100)을 쓸 수 있다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8000-8100",
+        "action": "accept",
+        "priority": 110
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8000, "expect": "allow" },
+    { "id": "n-002", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8100, "expect": "allow" },
+    { "id": "n-003", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8079, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8101, "expect": "block" },
+    { "id": "a-004", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8000, "expect": "block" },
+    { "id": "a-005", "kind": "attack", "from": "pc", "to": "10.10.10.10", "proto": "tcp", "port": 8000, "expect": "block" }
+  ]
+}

@@ -80,6 +80,23 @@ class EvaluateTest(unittest.TestCase):
         row = self.rows()[0]
         self.assertEqual((row["normal_pass_rate"], row["attack_block_rate"]), ("1.0", "0.0"))
 
+    def test_stateful_comes_from_deploy(self):
+        self.run_eval()
+        self.run_eval(deploy=dict(DEPLOY, stateful=True))
+        self.assertEqual([r["stateful"] for r in self.rows()], ["False", "True"])
+
+    def test_stateful_is_empty_without_deploy(self):
+        # 검증 반려·승인 거부로 적용하지 않은 경우
+        self.run_eval(deploy=None)
+        self.assertEqual(self.rows()[0]["stateful"], "")
+
+    def test_column_order(self):
+        # 열 순서를 바꾸면 기존 CSV 와 맞지 않으므로 순서를 고정해 둔다
+        self.run_eval()
+        header = self.results.read_text(encoding="utf-8").splitlines()[0]
+        self.assertEqual(header, "timestamp,batch_id,rep,commit,scenario,generator,stateful,valid,risk,"
+                                 "approved,normal_pass_rate,attack_block_rate,rolled_back,detect_s,mttr_s")
+
     def test_header_written_once(self):
         self.run_eval()
         self.run_eval()
@@ -101,6 +118,16 @@ class EvaluateTest(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             self.run_eval()
         self.assertIn("열이 지금 형식과 다름", str(cm.exception.code))
+        self.assertEqual(self.results.read_text(encoding="utf-8"), old)
+
+    def test_header_without_stateful_is_an_error(self):
+        # #38 이후·stateful 열 추가 전에 만든 CSV
+        self.results.parent.mkdir(parents=True)
+        old = "timestamp,batch_id,rep,commit,scenario,generator,valid,risk,approved,normal_pass_rate," \
+              "attack_block_rate,rolled_back,detect_s,mttr_s\n"
+        self.results.write_text(old, encoding="utf-8")
+        with self.assertRaises(SystemExit):
+            self.run_eval()
         self.assertEqual(self.results.read_text(encoding="utf-8"), old)
 
 

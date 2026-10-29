@@ -21,6 +21,8 @@ DEPLOY = {"stateful": False, "applied": True, "rolled_back": False, "aborted": F
               {"id": "n-001", "kind": "normal", "expect": "allow", "observed": "allow", "pass": True},
               {"id": "a-001", "kind": "attack", "expect": "block", "observed": "allow", "pass": False},
           ]}}
+SCENARIO = str(ROOT / "scenarios" / "req-001.json")
+GOLD = json.loads(Path(SCENARIO).read_text(encoding="utf-8"))["gold"]
 BATCH_ENV = {"BATCH_ID": "20261030-090000", "REP": "2", "COMMIT": "45b2ee6" + "0" * 33}
 
 
@@ -45,8 +47,10 @@ class EvaluateTest(unittest.TestCase):
         path.write_text(json.dumps(obj), encoding="utf-8")
         return str(path)
 
-    def run_eval(self, deploy=DEPLOY, env=None):
-        argv = ["evaluate.py", "--scenario", "req-001", "--generator", "file:req-001-state-01",
+    def run_eval(self, deploy=DEPLOY, env=None, candidate=GOLD, scenario=SCENARIO):
+        argv = ["evaluate.py", "--scenario", "req-001", "--scenario-file", scenario,
+                "--generator", "file:req-001-state-01",
+                "--candidate", self.write("candidate.json", candidate),
                 "--validation", self.write("validation.json", VALIDATION)]
         if deploy is not None:
             argv += ["--deploy", self.write("deploy.json", deploy)]
@@ -95,7 +99,38 @@ class EvaluateTest(unittest.TestCase):
         self.run_eval()
         header = self.results.read_text(encoding="utf-8").splitlines()[0]
         self.assertEqual(header, "timestamp,batch_id,rep,commit,scenario,generator,stateful,valid,risk,"
-                                 "approved,normal_pass_rate,attack_block_rate,rolled_back,detect_s,mttr_s")
+                                 "approved,normal_pass_rate,attack_block_rate,rolled_back,detect_s,mttr_s,"
+                                 "semantic_match,policy_diff,over_allow,over_block")
+
+    def test_gold_candidate_matches(self):
+        self.run_eval()
+        row = self.rows()[0]
+        self.assertEqual((row["semantic_match"], row["policy_diff"], row["over_allow"], row["over_block"]),
+                         ("1.0", "False", "0", "0"))
+
+    def test_widened_candidate_is_over_allow(self):
+        cand = json.loads(json.dumps(GOLD))
+        cand["rules"][0]["src"] = "any"
+        self.run_eval(candidate=cand)
+        row = self.rows()[0]
+        self.assertEqual(row["policy_diff"], "True")
+        self.assertGreater(int(row["over_allow"]), 0)
+        self.assertEqual(row["over_block"], "0")
+        self.assertLess(float(row["semantic_match"]), 1.0)
+
+    def test_schema_invalid_candidate_leaves_semantic_empty(self):
+        # 검증 반려(스키마 위반) 후보는 비교할 정책이 없다
+        bad = {"rules": [dict(GOLD["rules"][0], dst="10.10.20.0/24,10.10.30.0/24")]}
+        self.run_eval(deploy=None, candidate=bad)
+        row = self.rows()[0]
+        self.assertEqual([row[k] for k in evaluate.SEMANTIC], ["", "", "", ""])
+
+    def test_scenario_without_gold_is_an_error(self):
+        scenario = self.write("scenario.json", {"id": "req-x", "probes": []})
+        with self.assertRaises(SystemExit) as cm:
+            self.run_eval(scenario=scenario)
+        self.assertIn("의미 일치율 계산 실패", str(cm.exception.code))
+        self.assertFalse(self.results.exists())
 
     def test_header_written_once(self):
         self.run_eval()

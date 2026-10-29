@@ -38,6 +38,11 @@ class GeneratedTest(unittest.TestCase):
         self.write("req-002-qwen2.5-14b-s1")
         self.assertEqual(batch.candidates_for("scenarios/req-001.json", "generated"), [a, b])
 
+    def test_feedback_file_is_not_a_candidate(self):
+        a = self.write("req-001-qwen2.5-14b-s1")
+        (self.gen / "req-001-qwen2.5-14b-s1.feedback.json").write_text("{}", encoding="utf-8")
+        self.assertEqual(batch.candidates_for("scenarios/req-001.json", "generated"), [a])
+
     def test_all_includes_gold_and_generated(self):
         g = self.write("req-001-qwen2.5-14b-s1")
         cands = batch.candidates_for("scenarios/req-001.json", "all")

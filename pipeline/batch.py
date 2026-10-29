@@ -4,7 +4,8 @@
 후보 룰셋:
   gold       시나리오의 정답 룰셋 (generator --mock)
   mutations  mutations/<시나리오>-*.json 오류 주입 룰셋
-  generated  generated/<시나리오>-*.json LLM 생성 룰셋 (옆에 .meta.json 필수, 형식은 generated/README.md)
+  generated  generated/<시나리오>-*.json LLM 생성 룰셋 (옆에 .meta.json 필수, 형식은 generated/README.md.
+             .feedback.json 은 후보가 아니다)
   all        셋 다
 
 generated 후보는 meta 의 모델·digest·temperature·seed·프롬프트 버전을 CSV generator 열에 남긴다.
@@ -56,7 +57,9 @@ def candidates_for(scenario, kind):
     if kind in ("mutations", "all"):
         out += sorted(glob.glob(str(ROOT / "mutations" / f"{name}-*.json")))
     if kind in ("generated", "all"):
-        out += sorted(f for f in glob.glob(str(GENERATED / f"{name}-*.json")) if not f.endswith(".meta.json"))
+        # 후보 옆의 .meta.json(재현 조건)과 .feedback.json(eval/feedback.py 의 재생성 입력)은 후보가 아니다
+        out += sorted(f for f in glob.glob(str(GENERATED / f"{name}-*.json"))
+                      if not f.endswith((".meta.json", ".feedback.json")))
     return out
 
 

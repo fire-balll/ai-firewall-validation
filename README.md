@@ -17,12 +17,13 @@ lab/         Podman 격리 랩 (Containerfile, up/down, 경로 검수)
 scenarios/   자연어 요구사항 + 정답 룰셋 + 프로브 정의        서진정
 mutations/   오류 주입 룰셋                                    서진정
 generator/   자연어 -> IR (LLM)                                서진정
-validator/   정적 검증 + 위험도 판정                           양경찬
+validator/   정적 검증 + 위험도 판정, 교체 전후 정책 비교        양경찬
 prober/      능동 프로빙 (정상·공격 트래픽)                    강윤서
-eval/        지표 계산, 결과 CSV                               강윤서
+eval/        지표 계산(의미 일치율 포함), 결과 CSV, 재생성 피드백  강윤서
 deployer/    적용·감시·자동 롤백                               정택준
 pipeline/    전체 실행, 시뮬레이터-랩 교차 검증(crosscheck.py)   정택준
 tests/       단위 테스트 (python3 -m unittest discover -s tests -t .)
+docs/        안내서(overview.md), 주차별 할 일(weekly-plan.md), 회의록(meetings/)
 ```
 
 모든 모듈은 **JSON 입력 → JSON 출력 CLI**다. 앞 모듈이 없어도 예시 JSON 으로 개발할 수 있다.
@@ -65,7 +66,7 @@ git status                       # 깨끗해야 함 (manifest 에 커밋 해시�
 python3 pipeline/batch.py --candidates all --reps 3 --watch 10 --approve no
 ```
 
-- 후보: `gold`(정답 룰셋), `mutations`(`mutations/<시나리오>-*.json`), `all`
+- 후보: `gold`(정답 룰셋), `mutations`(`mutations/<시나리오>-*.json`), `generated`(LLM 생성 후보, `.meta.json` 필수. `generated/README.md`), `all`(셋 다)
 - 결과: `eval/results/results.csv` 에 실행마다 한 줄, `eval/results/batch-<시각>.json` 에 커밋·인자·실행 목록
 - 상태: `applied` / `rolled_back` / `rejected_validation` / `rejected_approval` / `aborted`(실행 실패, CSV 에 기록 안 됨, 원인은 manifest 의 `error` 와 `out/.../run.log`)
 - 작업 트리에 커밋 안 된 파일이 있으면(새 파일 포함) 실행을 거부한다

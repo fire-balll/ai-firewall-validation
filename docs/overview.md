@@ -1,6 +1,6 @@
 # 프로젝트 쉽게 보기
 
-이 프로젝트를 처음 보는 사람(팀원, 발표 청중, 리뷰어)을 위한 안내서다. 자세한 규칙은 [`AGENTS.md`](../AGENTS.md), 모듈 구조는 [`README.md`](../README.md) 에 있다.
+이 프로젝트를 처음 보는 사람(팀원, 발표 청중, 리뷰어)을 위한 안내서다. 자세한 규칙은 [`AGENTS.md`](../AGENTS.md), 모듈 구조는 [`README.md`](../README.md), 일정은 [`weekly-plan.md`](weekly-plan.md), 주간 회의록은 [`meetings/`](meetings/) 에 있다.
 
 ## 한 줄 요약
 
@@ -114,7 +114,7 @@ table inet fwlab {
 { "id": "a-001", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" }
 ```
 
-`prober/probe.py` 가 해당 컨테이너 안에서 `nc`·`curl`·`nmap`·`ping` 을 실제로 실행하고 결과를 판정한다.
+`prober/probe.py` 가 해당 컨테이너 안에서 `nc`·`curl`·`nmap`·`hping3`·`ping` 을 실제로 실행하고 결과를 판정한다.
 
 - 응답 없이 시간 초과 → 방화벽이 **막음** (block)
 - 연결 성공, 또는 "Connection refused"(방화벽은 통과했고 서버 포트만 닫힘) → 방화벽이 **통과시킴** (allow)

@@ -1,0 +1,45 @@
+{
+  "id": "req-020",
+  "description": "같은 망 안의 다른 호스트(pc2)가 있어야 드러나는 과허용. /32 를 /24 로 넓히는 widen 오류를 pc2 로 관측한다 (#33).",
+  "requirements": [
+    "서버의 관리 포트(8080)는 관리자 PC(10.10.20.10) 한 대만 쓸 수 있다. 같은 LAN 의 다른 PC 와 다른 망은 쓸 수 없다",
+    "서버의 웹 서비스(80)는 PC 망의 모든 PC 가 쓸 수 있다"
+  ],
+  "gold": {
+    "scenario": "req-020",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "서버의 관리 포트(8080)는 관리자 PC(10.10.20.10) 한 대만 쓸 수 있다. 같은 LAN 의 다른 PC 와 다른 망은 쓸 수 없다",
+        "src": "10.10.20.10/32",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8080",
+        "action": "accept",
+        "priority": 100
+      },
+      {
+        "id": "g-002",
+        "intent": "서버의 웹 서비스(80)는 PC 망의 모든 PC 가 쓸 수 있다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "80",
+        "action": "accept",
+        "priority": 110
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "allow" },
+    { "id": "n-002", "kind": "normal", "from": "pc2", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "allow" },
+    { "id": "n-003", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "pc2", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "guest", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-004", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 9999, "expect": "block" },
+    { "id": "a-005", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-006", "kind": "attack", "from": "pc", "to": "10.10.10.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-007", "kind": "attack", "from": "pc", "to": "10.10.10.10", "proto": "tcp", "port": 8080, "expect": "block" }
+  ]
+}

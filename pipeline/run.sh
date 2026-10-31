@@ -37,8 +37,8 @@ python3 validator/validate.py "$OUT/candidate.json" --nft-check > "$OUT/validati
 ok=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["ok"])' "$OUT/validation.json")
 risk=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["risk"])' "$OUT/validation.json")
 
-record() { python3 eval/evaluate.py --scenario "$NAME" --generator "$GENERATOR" \
-             --validation "$OUT/validation.json" "$@"; }
+record() { python3 eval/evaluate.py --scenario "$NAME" --scenario-file "$SCENARIO" --generator "$GENERATOR" \
+             --candidate "$OUT/candidate.json" --validation "$OUT/validation.json" "$@"; }
 
 if [[ "$ok" != True ]]; then
   echo "검증 실패: 적용하지 않음 ($OUT/validation.json)"

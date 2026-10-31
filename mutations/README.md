@@ -68,6 +68,6 @@ IR 에는 상태 추적 룰을 끌 필드가 없어서, state 후보는 **IR 이
 | req-009-range-01.json | req-009 | range | g-001 의 dport 8000-8100 → 8000-8079 | low | n-001 (#13 이후 n-003 도) |
 | req-009-state-01.json | req-009 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
 | req-010-action-01.json | req-010 | action | g-003(PC → IoT 관리 페이지) 의 action accept → drop | low | n-002 |
-| req-010-extra-01.json | req-010 | extra | x-001(any → any, proto any, accept, priority 200) 추가 | high | a-003~a-005 (#13 이후 a-006~a-010 도) |
+| req-010-extra-01.json | req-010 | extra | x-001(any → any, proto any, accept, priority 200) 추가 | high | a-003~a-005 (#13 이후 a-006~a-010, #33 이후 a-011 도) |
 | req-010-order-01.json | req-010 | order | g-001(침해 기기 drop, 100) 과 g-004(IoT → 서버 8080 accept, 130) 의 priority 를 맞바꿈 | high | a-001 |
 | req-010-state-01.json | req-010 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-005) |

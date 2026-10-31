@@ -4,20 +4,20 @@
   "ollama_version": "0.40.3",
   "temperature": 0.7,
   "seed": 3,
-  "prompt_version": "v1",
+  "prompt_version": "v2",
   "scenario": "req-003",
   "options": {
     "temperature": 0.7,
     "seed": 3,
     "num_ctx": 8192
   },
-  "time": "2026-10-16T09:52:20+00:00",
+  "time": "2026-10-19T11:32:57+00:00",
   "attempts": [
     {
       "done_reason": "stop",
-      "prompt_eval_count": 712,
-      "eval_count": 242,
-      "total_duration_ns": 19538514125,
+      "prompt_eval_count": 748,
+      "eval_count": 248,
+      "total_duration_ns": 21612184291,
       "problems": []
     }
   ]

@@ -1,0 +1,78 @@
+{
+  "id": "req-016",
+  "description": "목적지 쪽에 망이 여러 개다. 한 문장의 두 망을 룰 두 개로 나눠야 한다. 예외(침해된 기기)를 문장 뒤에 쓴다. missing(한쪽 망 누락)·widen(dst 를 any 로 합치기)·order 오류용.",
+  "requirements": [
+    "IoT 망의 기기는 PC 망과 서버 망에 ping 할 수 있다 (상태 확인용)",
+    "IoT 망의 기기는 서버의 업데이트 포트(8080)를 쓸 수 있다",
+    "단, 침해된 기기(10.10.10.66)는 PC 망과 서버 망 어디에도 접속할 수 없다"
+  ],
+  "gold": {
+    "scenario": "req-016",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "단, 침해된 기기(10.10.10.66)는 PC 망과 서버 망 어디에도 접속할 수 없다",
+        "src": "10.10.10.66/32",
+        "dst": "10.10.20.0/24",
+        "proto": "any",
+        "dport": "any",
+        "action": "drop",
+        "priority": 100
+      },
+      {
+        "id": "g-002",
+        "intent": "단, 침해된 기기(10.10.10.66)는 PC 망과 서버 망 어디에도 접속할 수 없다",
+        "src": "10.10.10.66/32",
+        "dst": "10.10.30.0/24",
+        "proto": "any",
+        "dport": "any",
+        "action": "drop",
+        "priority": 110
+      },
+      {
+        "id": "g-003",
+        "intent": "IoT 망의 기기는 PC 망과 서버 망에 ping 할 수 있다 (상태 확인용)",
+        "src": "10.10.10.0/24",
+        "dst": "10.10.20.0/24",
+        "proto": "icmp",
+        "dport": "any",
+        "action": "accept",
+        "priority": 120
+      },
+      {
+        "id": "g-004",
+        "intent": "IoT 망의 기기는 PC 망과 서버 망에 ping 할 수 있다 (상태 확인용)",
+        "src": "10.10.10.0/24",
+        "dst": "10.10.30.0/24",
+        "proto": "icmp",
+        "dport": "any",
+        "action": "accept",
+        "priority": 130
+      },
+      {
+        "id": "g-005",
+        "intent": "IoT 망의 기기는 서버의 업데이트 포트(8080)를 쓸 수 있다",
+        "src": "10.10.10.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8080",
+        "action": "accept",
+        "priority": 140
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "iot-dev", "to": "10.10.20.10", "proto": "icmp", "expect": "allow" },
+    { "id": "n-002", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "icmp", "expect": "allow" },
+    { "id": "n-003", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "attacker", "to": "10.10.20.10", "proto": "icmp", "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "icmp", "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-004", "kind": "attack", "from": "iot-dev", "to": "10.10.40.10", "proto": "icmp", "expect": "block" },
+    { "id": "a-005", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-006", "kind": "attack", "from": "iot-dev", "to": "10.10.20.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-007", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "icmp", "expect": "block" },
+    { "id": "a-008", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-009", "kind": "attack", "from": "server", "to": "10.10.20.10", "proto": "icmp", "expect": "block" }
+  ]
+}

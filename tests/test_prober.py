@@ -109,3 +109,77 @@ class NmapCommandTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# lab 이미지의 hping3 -S -n -c 1 -i u10000 출력 그대로. 응답 줄은 stdout, 통계는 stderr 로 나온다
+HPING_HEAD = "HPING 10.10.30.10 (eth0 10.10.30.10): S set, 40 headers + 0 data bytes\n"
+
+
+def hping_stats(received):
+    return (f"\n--- 10.10.30.10 hping statistic ---\n1 packets transmitted, {received} packets received, "
+            f"{0 if received else 100}% packet loss\nround-trip min/avg/max = 0.0/0.0/0.0 ms\n")
+
+
+def hping_reply(port, flags):
+    return f"len=44 ip=10.10.30.10 ttl=63 DF id=0 sport={port} flags={flags} seq=0 win=65480 rtt=0.8 ms\n"
+
+
+class HpingObserveTest(unittest.TestCase):
+    def observe(self, stdout, returncode, stderr, port=80):
+        return probe.observe("hping3", done(stdout, returncode, stderr), port, "10.10.30.10")
+
+    def test_syn_ack_is_allow(self):
+        self.assertEqual(self.observe(HPING_HEAD + hping_reply(80, "SA"), 0, hping_stats(1)), "allow")
+
+    def test_rst_is_allow_because_firewall_passed(self):
+        self.assertEqual(self.observe(HPING_HEAD + hping_reply(22, "RA"), 0, hping_stats(1), 22), "allow")
+
+    def test_no_reply_is_block(self):
+        self.assertEqual(self.observe(HPING_HEAD, 1, hping_stats(0), 8080), "block")
+
+    def test_icmp_unreachable_with_exit_zero_is_failure(self):
+        # 경로 없음: ICMP 오류도 "1 packets received" 로 세고 종료 코드 0 이다
+        out = "HPING 10.10.50.5 (eth0 10.10.50.5): S set, 40 headers + 0 data bytes\n" \
+              "ICMP Network Unreachable from ip=10.10.20.254\n"
+        res = done(out, 0, hping_stats(1))
+        self.assertIsNone(probe.observe("hping3", res, 80, "10.10.50.5"))
+
+    def test_reply_for_other_port_is_failure(self):
+        self.assertIsNone(self.observe(HPING_HEAD + hping_reply(8080, "SA"), 0, hping_stats(1), 80))
+
+    def test_unexpected_flags_are_failure(self):
+        self.assertIsNone(self.observe(HPING_HEAD + hping_reply(80, "S"), 0, hping_stats(1)))
+
+    def test_resolve_error_is_failure(self):
+        self.assertIsNone(self.observe("", 1, "Unable to resolve 'server'\n"))
+
+    def test_podman_exec_failure_is_failure(self):
+        err = "Error: can only create exec sessions on running containers: container state improper\n"
+        self.assertIsNone(self.observe("", 125, err))
+
+
+class HpingCommandTest(unittest.TestCase):
+    def probe(self, **kw):
+        return dict({"id": "a-x", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 80,
+                     "tool": "hping3"}, **kw)
+
+    def test_command_sends_one_syn_without_dns(self):
+        tool, cmd = probe.command(self.probe())
+        self.assertEqual(tool, "hping3")
+        self.assertEqual(cmd, ["hping3", "-S", "-n", "-c", "1", "-i", "u10000", "-p", "80", "10.10.30.10"])
+        self.assertNotIn("--flood", cmd)
+
+    def test_target_outside_lab_is_rejected(self):
+        for to in ("8.8.8.8", "10.11.0.1", "server"):
+            with self.subTest(to=to), self.assertRaisesRegex(ValueError, "^a-x: hping3 대상"):
+                probe.command(self.probe(to=to))
+
+    def test_port_must_be_single_integer(self):
+        # hping3 는 99999 를 받아 다른 포트(34463)로 보낸다
+        for port in ("80", "80-90", 0, 65536, 99999, True):
+            with self.subTest(port=port), self.assertRaises(ValueError):
+                probe.command(self.probe(port=port))
+
+    def test_hping3_on_icmp_is_rejected(self):
+        with self.assertRaises(ValueError):
+            probe.command(self.probe(proto="icmp"))

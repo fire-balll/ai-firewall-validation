@@ -3,8 +3,8 @@
   "rules": [
     {
       "id": "r-001",
-      "intent": "Allow HTTP traffic from LAN and IoT network to the server",
-      "src": "any",
+      "intent": "Allow IoT devices to access the server's web service on port 80",
+      "src": "10.10.10.0/24",
       "dst": "10.10.30.10",
       "proto": "tcp",
       "dport": "80",
@@ -13,23 +13,33 @@
     },
     {
       "id": "r-002",
-      "intent": "Allow management traffic from LAN to the server",
+      "intent": "Allow PCs to access the server's web service on port 80",
       "src": "10.10.20.0/24",
       "dst": "10.10.30.10",
       "proto": "tcp",
-      "dport": "8080",
+      "dport": "80",
       "action": "accept",
       "priority": 2
     },
     {
       "id": "r-003",
-      "intent": "Block all other traffic",
+      "intent": "Allow PCs to access the server's management port on 8080",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 3
+    },
+    {
+      "id": "r-004",
+      "intent": "Default deny rule for all other traffic",
       "src": "any",
       "dst": "any",
       "proto": "any",
       "dport": "any",
       "action": "drop",
-      "priority": 3
+      "priority": 100
     }
   ]
 }

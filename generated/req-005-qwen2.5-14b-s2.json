@@ -3,33 +3,33 @@
   "rules": [
     {
       "id": "r-001",
-      "intent": "PC에서 IoT 기기의 관리 페이지에 접근할 수 있게 한다.",
+      "intent": "PC에서 IoT 기기의 관리 페이지(80) 접근 허용",
       "src": "10.10.20.0/24",
       "dst": "10.10.10.10",
       "proto": "tcp",
       "dport": "80",
       "action": "accept",
-      "priority": 0
+      "priority": 1
     },
     {
       "id": "r-002",
-      "intent": "서버에서 IoT 기기의 관리 페이지에 접근하지 못하게 한다.",
+      "intent": "서버에서 IoT 기기의 관리 페이지 접근 차단",
       "src": "10.10.30.0/24",
       "dst": "10.10.10.10",
       "proto": "tcp",
       "dport": "80",
       "action": "drop",
-      "priority": 1
+      "priority": 2
     },
     {
       "id": "r-003",
-      "intent": "기타 모든 트래픽을 차단한다.",
+      "intent": "기타 IoT 관리 페이지 접근 차단",
       "src": "any",
-      "dst": "any",
-      "proto": "any",
-      "dport": "any",
+      "dst": "10.10.10.10",
+      "proto": "tcp",
+      "dport": "80",
       "action": "drop",
-      "priority": 2
+      "priority": 3
     }
   ]
 }

@@ -25,7 +25,7 @@
 2. gold를 후보 종류 `gold`, `--reps 3 --watch 10 --approve no`로 먼저 검증합니다. 각 시나리오 3회 전부 `applied`, `rolled_back=0`, `aborted=0`이어야 후속 비교를 개시합니다. 실패 시 해당 시나리오 결과는 하네스 미확인으로 따로 남깁니다.
 3. 같은 고정 mutation은 `--candidates mutations --reps 3`, 생성 후보 seed 1/2/3은 각 서로 다른 파일이므로 `--candidates generated --reps 1`로 **별도 배치**합니다. `batch.py`는 한 호출의 모든 후보에 같은 `--reps`를 적용합니다. `--watch 10`은 실제 10초 종료 보장이 아니며 기본 감시 60초와 동일시하지 않습니다. 이 문서 작성 과정에서 실험용 배치를 실행하지 않았습니다.
 4. `--approve no`의 high는 `rejected_approval`이고 동적 평가에 포함하지 않습니다. high를 격리 랩에서 시험할지는 팀 승인·허용 후보 선택·강제 종료 후 수동 복원 계획이 있어야 합니다. `--approve yes`는 배치 **전체** high에 적용되므로 임의로 켜지 않습니다. 운영망/실서비스는 시험하지 않습니다.
-5. 각 실행의 manifest `(commit, scenario, candidate, rep, status, out, error, meta)`와 해당 `validation.json`, `deploy.json`, `run.log`, CSV를 연결합니다. `applied/rolled_back/rejected_validation/rejected_approval/aborted`를 섞지 않으며 도구 실패·부분 프로브는 성공/차단으로 보정하지 않습니다. PR #38의 CSV `batch_id`·`rep`·`commit` 열은 main에 반영됐습니다. PR #39는 CSV `stateful` 열을 추가하는 별도 미병합 변경입니다. 후보·메타의 연결은 manifest로 대조합니다.
+5. 각 실행의 manifest `(commit, scenario, candidate, rep, status, out, error, meta)`와 해당 `validation.json`, `deploy.json`, `run.log`, CSV를 연결합니다. `applied/rolled_back/rejected_validation/rejected_approval/aborted`를 섞지 않으며 도구 실패·부분 프로브는 성공/차단으로 보정하지 않습니다. PR #38의 CSV `batch_id`·`rep`·`commit` 열과 PR #39의 CSV `stateful` 열은 main에 반영됐습니다(10/29 확인). 후보·메타의 연결은 manifest로 대조합니다.
 6. 배치 종료 뒤 승인된 기준 룰셋과 실제 nft snapshot, 경로/서비스를 대조합니다. `flush ruleset`은 직전 후보와 룰을 합치지 않지만 conntrack을 지우지는 않으며, 롤백은 배치 최초 기준 복원과 동일하지 않을 수 있습니다. 복원 실패/시스템 종료 때 자동 안전을 주장하지 않고 실험을 멈춥니다.
 
 ## 지표·제외와 빈 표
@@ -42,7 +42,7 @@
 ## 10/26 PR #37 통합 담당 응답과 남은 결정
 
 - @iamtaekjun 님은 PR #37 댓글에서 **replace 전후 비교 범위**와 동시 적용 모드 제외를 수용했습니다. deployer 영역(#29)에서 적용 IR·SHA-256·stateful·커밋을 `current`로 기록하고, 다음 적용 직전 실제 `nft list ruleset` 구조를 `to_nft(current)`와 비교하며 불일치·관리 밖 규칙을 중단시키겠다고 답했습니다. 아직 구현·통합 시험이 확인된 것은 아니므로 이 응답만으로 `validate.py` TODO를 해소하지 않습니다. 실제 구현 시 counter/handle 제외 규칙, 정확한 snapshot 정규화, `current`의 원자적 기록·신뢰 경계, 재조회 시점과 `stale_baseline`/`indeterminate` 전파를 입력 계약과 시험으로 확인해야 합니다.
-- 정상 프로브 차단은 승인 가능한 high가 아닌 검증 실패/롤백으로 분류한다는 통합 담당 의견이 확인됐습니다. weekly-plan의 표시·프로브 실패 명세와 B의 사람 전수검토 실제 측정 여부는 팀 반영을 확인합니다.
-- high 후보의 선택적 격리 시험·중단/복원 책임, generated round/반복, #39 CSV `stateful` 열의 반영 여부를 기록합니다. 승인 전 VM·Podman·네트워크 실험 없음.
+- 정상 프로브 차단은 승인 가능한 high가 아닌 검증 실패/롤백으로 분류한다는 통합 담당 의견이 확인됐고, 10/29 회의에서 팀 결정으로 기록했습니다(`docs/meetings/2026-10-29.md`). weekly-plan의 표시·프로브 실패 명세와 B의 사람 전수검토 실제 측정 여부는 팀 반영을 확인합니다.
+- high 후보의 선택적 격리 시험·중단/복원 책임, generated round/반복을 기록합니다. #39 CSV `stateful` 열은 main에 반영됐습니다(10/29 확인). 승인 전 VM·Podman·네트워크 실험 없음.
 
 본인 발표 슬라이드: 정적 검사/위험도와 반려 구분 → 오프라인 교체 비교(지원 범위와 state 반례) → B/C·정적/동적 빈 결과표 → 결정/잔여. 실제 결과 수치는 재시험·팀 판단 뒤에만 채웁니다.

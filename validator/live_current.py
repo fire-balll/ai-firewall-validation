@@ -10,9 +10,10 @@ from common.lab import FW, exec_in, require_lab
 
 def live_snapshot():
     require_lab()
-    # Counters change under normal traffic. -s excludes their live values while
-    # retaining the full policy structure; do not use -t (would hide set data).
-    result = exec_in(FW, 'nft', '-s', 'list', 'ruleset')
+    # Counters change under normal traffic. -s excludes their live values;
+    # -n/-y keep numeric addresses and chain priority for strict comparison.
+    # Do not use -t (would hide set data).
+    result = exec_in(FW, 'nft', '-n', '-y', '-s', 'list', 'ruleset')
     if result.returncode != 0 or not result.stdout.strip():
         raise RuntimeError(f'nft snapshot unavailable (exit {result.returncode}): {result.stderr}')
     return result.stdout

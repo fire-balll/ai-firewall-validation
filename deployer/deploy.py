@@ -33,7 +33,10 @@ def nft_apply(text):
 
 
 def snapshot():
-    res = exec_in(FW, "nft", "list", "ruleset")
+    # Keep rollback text on the same stateless rendering used by live_snapshot:
+    # ordinary list output embeds changing counter values that structure() must
+    # not equate with the stable policy/IR representation.
+    res = exec_in(FW, "nft", "-n", "-y", "-s", "list", "ruleset")
     if res.returncode != 0:
         raise RuntimeError(f"nft list 실패: {res.stderr.strip()}")
     return "flush ruleset\n" + res.stdout

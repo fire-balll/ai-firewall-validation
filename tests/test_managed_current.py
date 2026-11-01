@@ -190,6 +190,12 @@ class StructureAndSecurityTest(unittest.TestCase):
         self.ir = load_json(ROOT / 'scenarios/req-001.json')['gold']
         self.snapshot = '\n'.join(to_nft(self.ir).splitlines()[1:]) + '\n'
 
+    def test_rollback_snapshot_uses_same_stateless_nft_rendering_as_provider(self):
+        with mock.patch('deployer.deploy.exec_in', return_value=SimpleNamespace(
+                returncode=0, stdout=self.snapshot, stderr='')) as run:
+            self.assertEqual(deploy.snapshot(), 'flush ruleset\n' + self.snapshot)
+        run.assert_called_once_with(deploy.FW, 'nft', '-n', '-y', '-s', 'list', 'ruleset')
+
     def test_exact_subset_and_unmanaged_fail_closed(self):
         structure(self.snapshot, self.ir, True)
         for changed in (self.snapshot + 'table ip other {}\n',

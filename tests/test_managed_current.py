@@ -378,6 +378,21 @@ class StructureAndSecurityTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'structure'):
                 store.recover(lambda _: self.fail('foreign policy overwritten'))
 
+    def test_recovery_nft_read_failure_does_not_apply(self):
+        raw = json.dumps(self.ir).encode()
+        rollback = 'flush ruleset\n' + self.snapshot
+        intent = {'before': digest(raw), 'candidate': digest(raw),
+                  'snapshot': digest(self.snapshot.encode()),
+                  'before_ir': base64.b64encode(raw).decode(), 'before_stateful': True,
+                  'before_commit': 'a' * 40,
+                  'candidate_ir': base64.b64encode(raw).decode(), 'candidate_stateful': True,
+                  'rollback_nft': rollback, 'rollback_sha256': digest(rollback.encode())}
+        store = ManagedStore.__new__(ManagedStore)
+        with mock.patch.object(store, '_read', return_value=intent), \
+             mock.patch('deployer.managed.live_snapshot', side_effect=RuntimeError('nft snapshot unavailable')):
+            with self.assertRaisesRegex(RuntimeError, 'snapshot unavailable'):
+                store.recover(lambda _: self.fail('failed read led to apply'))
+
     def test_corrupt_recovery_intent_never_applies(self):
         store = ManagedStore.__new__(ManagedStore)
         with mock.patch.object(store, '_read', return_value={'before': 'x'}):

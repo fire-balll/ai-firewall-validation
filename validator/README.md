@@ -3,7 +3,7 @@
 정적 검증 + 위험도 판정. (담당: 양경찬)
 
 ```
-validate.py candidate.json [--nft-check]
+validate.py candidate.json [--nft-check] [--stateful auto|yes|no] [--compare-current]
   -> {"ok": bool, "errors": [...], "risk": "low"|"high"|null, "reasons": [...], "anomalies": [...]}
 ```
 
@@ -63,8 +63,19 @@ A ⊆ B 는 A 의 모든 프로토콜이 B 에 있고 각 축의 구간이 B 안
 - 기본 정책 drop 과 겹치는 drop 룰(지워도 결과가 같은 drop)은 redundancy 로 세지 않는다.
 - 응답 트래픽(`ct state`)은 IR 밖이라 보지 않는다(`mutations/README.md` 의 state 유형).
 - 정답 룰셋과 비교하지 않으므로 port·range·swap·missing·narrow 오류는 여기서 잡히지 않는다. 동적 검증 몫이다.
-- 기존(적용 중인) 룰셋과의 충돌 검사는 아직 TODO.
+- 기존(적용 중인) 룰셋 비교는 `validate_with_current` API로 연결한다. `--compare-current`는 `FW_MANAGED_STORE`의 POSIX 전용 보호 디렉터리(소유자·0700, 파일0600, 링크 금지)에서 단일 원자 기록의 IR 원바이트/SHA/state/commit/전체 nft digest를 읽는다. `nft -s list ruleset`을 전체 구조와 대조하고 두 번 조회한다. 임의 JSON verified 플래그나 기존 host 룰을 자동 채택하지 않는다. `deployer/bootstrap_current.py`는 기존 관리기록이 없는 경우에만 운영자가 검토한 IR과 실제 전체 nft 구조 일치 시 명시적으로 등록한다. Windows ACL은 미지원이라 안전 실패한다. 실제 nft 렌더 차이는 지원하지 않으며 실랩 검증 전 운영 적용 금지.
+- `CURRENT_COMPARE=yes` pipeline은 후보 바이트 SHA와 current snapshot 토큰을 승인 내용에 묶어 deployer에 전달한다. deployer는 별도 협조 flock 안에서 비교→직전 snapshot 재조회→fsync intent/복구 원본→apply→구조 readback→probe→record fsync/finish 또는 rollback을 수행한다. policy_diff는 정적 high와 별도로 승인한다. 미완료 intent는 이후 적용을 차단하며 `deployer/recover_current.py --store ...`의 명시적 수동 복구 경로가 있다. 이 경로는 **합성 시험 후보**로서 nft 버전별 실제 출력, 같은 권한/외부 nft 작성자의 lock 준수, SIGKILL 뒤 자동 감시·복원, 컨테이너 중단 복구를 입증하지 못했다. 보호된 저장소 자체도 같은 uid의 임의 코드 실행은 막지 못한다. 실환경/운영 안전·3주차 전체 완료 판정이 아니다.
 - `1-65535` 처럼 거의 전체인 포트 범위, 같은 id 를 가진 룰 여러 개, 빈 `rules` 는 아직 따로 판정하지 않는다(팀 합의 필요).
+
+## 관리 current의 nft 검사 모드
+
+`--stateful auto`는 원본 파일 경로의 `stateful_for()`를 따른다. `req-001-state-01.json`은 응답 추적 룰 없이 문법 검사한다. 이름을 바꾼 후보와 stdin은 `--stateful yes/no`를 명시한다. `- --nft-check`는 모드를 명시하지 않으면 결과 없이 종료코드 2로 끝난다. `pipeline/run.sh`는 복사 전 원본 CANDIDATE의 모드를 보존하고(생성 후보는 stateful), validator의 `--stateful yes/no`와 deployer의 `--stateless`에 같은 값을 전달한다. pipeline/deployer 수정은 담당 @iamtaekjun의 리뷰 대상이며 POSIX 격리 nft 실증·협조 잠금 운영계약 전까지 운영 적용을 승인하지 않는다.
+
+`tests/test_pipeline_validator_mode.py`는 실제 bash 파이프라인과 validator/deployer CLI를 격리 복사본에서 실행한다. 생성 mock·파일 stateful·state mutation stateless의 nft 변환 일치, nft 실행 파일 부재 시 빈 validation/exit1/기록·적용 중단을 검사한다. nft 성공 응답·랩 snapshot/apply/probe·CSV 기록은 시험 대역이다. 실제 VM/nft·통신·롤백 실측을 대신하지 않는다. Windows checkout의 CRLF는 시험 복사본에서 LF로 정규화한다.
+
+### 적용 중 정책 비교 API
+
+`validate_with_current(candidate, candidate_stateful=bool, provider=...)`는 기존 정적 `ok/risk`와 별도로 `comparison`을 반환한다. provider는 실제 nft 구조·관리 밖 룰·기록 IR 연결을 검증한 `CurrentRules`(원바이트·SHA-256·stateful·commit·snapshot_token)를 읽고, 계산 뒤 다시 확인해야 한다. 검증 플래그 JSON이나 gold 파일은 provider 대신 사용할 수 없다. 없거나 오래된 증거·SHA 불일치·지원 범위/상한 초과는 ToolError로 중단한다. 비교 결과는 초기 패킷 정책 차이이며 배포 승인이나 conntrack 안전성 판정이 아니다. 적용 담당자는 적용 직전 자기 잠금 안에서 재검증해야 한다.
 
 ## 테스트
 

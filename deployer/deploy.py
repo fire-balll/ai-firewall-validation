@@ -15,6 +15,7 @@ OPNsense savepoint 와 같은 구조를 nftables 로 구현한다.
 import argparse
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -42,18 +43,65 @@ def snapshot():
     return "flush ruleset\n" + res.stdout
 
 
-def probe(scenario_path):
+def probe(scenario_path, timeout=None):
     # 프로브 전후로 랩이 온전해야 결과를 믿을 수 있다 (도중에 꺼져도 거짓 block 이 나온다)
     require_lab()
-    res = subprocess.run(
+    if timeout is None:
+        # Legacy path still bounds its child, independent of managed watch time.
+        timeout = 300
+    if timeout <= 0:
+        raise RuntimeError('probe deadline expired')
+    proc = subprocess.Popen(
         [sys.executable, str(ROOT / "prober" / "probe.py"), scenario_path],
-        capture_output=True, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        start_new_session=(os.name == 'posix'),
     )
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
+    except BaseException as ex:
+        # Timeouts and termination signals both own the direct child and its
+        # nested podman process. Reap before the managed rollback begins.
+        try:
+            if os.name == 'posix':
+                os.killpg(proc.pid, signal.SIGKILL)
+            else:
+                proc.kill()
+        except ProcessLookupError:
+            pass
+        proc.communicate()
+        if isinstance(ex, subprocess.TimeoutExpired):
+            raise RuntimeError('probe deadline expired') from ex
+        raise
+    res = subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
     if res.returncode != 0:
         lines = res.stderr.strip().splitlines()
         raise RuntimeError(f"prober 실패 (exit {res.returncode}): {lines[-1] if lines else ''}")
     require_lab()
     return json.loads(res.stdout)
+
+
+def complete_probe(result, expected):
+    """Require one observed row per scenario probe, including normal traffic."""
+    if not isinstance(result, dict) or not isinstance(result.get('results'), list):
+        raise RuntimeError('incomplete probe observation')
+    rows = result['results']
+    if len(rows) != len(expected):
+        raise RuntimeError('incomplete probe observation')
+    seen = set()
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {'id', 'kind', 'expect', 'observed', 'pass'}:
+            raise RuntimeError('incomplete probe observation')
+        ident = row['id']
+        if not isinstance(ident, str) or ident not in expected or ident in seen:
+            raise RuntimeError('incomplete probe observation')
+        seen.add(ident)
+        reference = expected[ident]
+        if (row['kind'] != reference['kind'] or row['expect'] != reference['expect'] or
+                row['observed'] not in ('allow', 'block') or
+                type(row['pass']) is not bool or
+                row['pass'] != (row['observed'] == row['expect'])):
+            raise RuntimeError('incomplete probe observation')
+    return rows
 
 def restore_managed(store, before, candidate, stateful, saved, observe):
     """Do not erase an uncooperative writer's policy during rollback.
@@ -92,6 +140,19 @@ def managed_apply(args, stateful):
            "aborted": False, "error": None, "t_apply": None, "t_detect": None,
            "t_restored": None, "detect_s": None, "mttr_s": None, "probe": None}
     store = ManagedStore(args.managed_store)
+    if (type(args.watch) is not int or args.watch < 0 or
+            type(args.interval) is not int or args.interval <= 0):
+        raise ValueError('watch must be nonnegative and interval positive')
+    scenario = load_json(args.scenario)
+    probes = scenario.get('probes')
+    if (not isinstance(probes, list) or not probes or
+            any(not isinstance(p, dict) or not isinstance(p.get('id'), str) or
+                not isinstance(p.get('kind'), str) or p.get('expect') not in ('allow', 'block')
+                for p in probes)):
+        raise RuntimeError('invalid scenario probes')
+    expected = {p['id']: p for p in probes}
+    if len(expected) != len(probes):
+        raise RuntimeError('duplicate scenario probe IDs')
     raw = Path(args.ruleset).read_bytes()
     if not args.expected_sha256 or digest(raw) != args.expected_sha256:
         raise RuntimeError('candidate changed since validation')
@@ -119,7 +180,15 @@ def managed_apply(args, stateful):
             raise RuntimeError('current changed before managed intent')
         store.intent(before, raw, stateful, saved)
         attempted = False
+        watched_signals = (signal.SIGTERM,) + ((signal.SIGHUP,) if hasattr(signal, 'SIGHUP') else ())
+        previous_handlers = {}
+        def interrupted(signum, _frame):
+            # Defer termination to the transaction's rollback handler.
+            signal.signal(signum, signal.SIG_IGN)
+            raise RuntimeError(f'managed transaction interrupted by signal {signum}')
         try:
+            for sig in watched_signals:
+                previous_handlers[sig] = signal.signal(sig, interrupted)
             # Recheck under the lock immediately before the only nft write.
             from validator.live_current import live_snapshot as observe
             if digest(observe().encode()) != before.snapshot_token:
@@ -131,15 +200,12 @@ def managed_apply(args, stateful):
             out['t_apply'] = time.time()
             deadline = out['t_apply'] + args.watch
             while True:
-                result = probe(args.scenario)
+                result = probe(args.scenario, timeout=max(1, deadline - time.time()))
                 out['probe'] = result
-                if (not isinstance(result, dict) or
-                        not isinstance(result.get('results'), list) or
-                        not result['results'] or
-                        any(not isinstance(r, dict) or type(r.get('pass')) is not bool
-                            for r in result['results'])):
-                    raise RuntimeError('incomplete probe observation')
-                if not all(r['pass'] for r in result['results']):
+                rows = complete_probe(result, expected)
+                if args.watch and time.time() > deadline:
+                    raise RuntimeError('probe watch deadline expired')
+                if not all(r['pass'] for r in rows):
                     out['t_detect'] = time.time()
                     restore_managed(store, before, candidate, stateful, saved, observe)
                     out['t_restored'] = time.time()
@@ -163,6 +229,9 @@ def managed_apply(args, stateful):
             else:
                 store.finish()
             raise
+        finally:
+            for sig, handler in previous_handlers.items():
+                signal.signal(sig, handler)
 
 
 def main():

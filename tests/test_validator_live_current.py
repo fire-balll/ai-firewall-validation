@@ -16,12 +16,14 @@ class CurrentReaderTest(unittest.TestCase):
 
     @mock.patch('validator.live_current.require_lab')
     @mock.patch('validator.live_current.exec_in')
-    def test_partial_or_failed_nft_collection_rejected(self, run, lab):
-        for code, stdout in ((125, ''), (0, '')):
+    def test_failed_nft_collection_rejected_and_empty_success_distinguished(self, run, lab):
+        for code, stdout in ((125, ''), (125, 'partial')):
             with self.subTest(code=code):
                 run.return_value = mock.Mock(returncode=code, stdout=stdout, stderr='unavailable')
                 with self.assertRaisesRegex(RuntimeError, 'nft snapshot unavailable'):
                     live_snapshot()
+        run.return_value = mock.Mock(returncode=0, stdout='', stderr='')
+        self.assertEqual(live_snapshot(), '')
         lab.side_effect = RuntimeError('lab unavailable')
         with self.assertRaisesRegex(RuntimeError, 'lab unavailable'):
             live_snapshot()

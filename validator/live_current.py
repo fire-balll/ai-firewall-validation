@@ -14,7 +14,7 @@ def live_snapshot():
     # -n/-y keep numeric addresses and chain priority for strict comparison.
     # Do not use -t (would hide set data).
     result = exec_in(FW, 'nft', '-n', '-y', '-s', 'list', 'ruleset')
-    if result.returncode != 0 or not result.stdout.strip():
+    if result.returncode != 0:
         raise RuntimeError(f'nft snapshot unavailable (exit {result.returncode}): {result.stderr}')
     return result.stdout
 

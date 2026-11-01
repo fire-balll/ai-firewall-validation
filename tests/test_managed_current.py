@@ -4,6 +4,7 @@ import hashlib
 import base64
 import json
 import os
+import signal
 from pathlib import Path
 import subprocess
 import sys
@@ -70,6 +71,9 @@ class ManagedTransactionTest(unittest.TestCase):
         self.path.write_text(json.dumps(self.candidate))
         self.lab = {'text': '\n'.join(to_nft(self.ir).splitlines()[1:]) + '\n'}
         self.store = FakeStore(self.tmp.name, self.lab, self.ir)
+        self.probe_results = [dict(id=p['id'], kind=p['kind'], expect=p['expect'],
+                                   observed=p['expect'], **{'pass': True})
+                              for p in load_json(ROOT / 'scenarios/req-001.json')['probes']]
         self.args = SimpleNamespace(managed_store=self.tmp.name,
                                     ruleset=str(self.path), approved_high=True,
                                     approved_replacement=True,
@@ -77,6 +81,7 @@ class ManagedTransactionTest(unittest.TestCase):
                                     expected_current=digest(self.lab['text'].encode()),
                                     scenario='scenarios/req-001.json', watch=0, interval=5)
         self.apply_calls = []
+        self.real_probe = deploy.probe
         def apply(text):
             self.apply_calls.append(text)
             self.lab['text'] = '\n'.join(text.splitlines()[1:]) + '\n'
@@ -85,7 +90,7 @@ class ManagedTransactionTest(unittest.TestCase):
             mock.patch('validator.validate.nft_check', return_value=[]),
             mock.patch('deployer.deploy.snapshot', side_effect=lambda: 'flush ruleset\n' + self.lab['text']),
             mock.patch('deployer.deploy.nft_apply', side_effect=apply),
-            mock.patch('deployer.deploy.probe', return_value={'results': [{'pass': True}]}),
+            mock.patch('deployer.deploy.probe', return_value={'results': self.probe_results}),
             mock.patch('validator.live_current.live_snapshot', side_effect=lambda: self.lab['text']),
             mock.patch('deployer.deploy.subprocess.run', return_value=SimpleNamespace(stdout='b' * 40)),
         ]
@@ -120,7 +125,9 @@ class ManagedTransactionTest(unittest.TestCase):
         self.assertEqual(self.apply_calls, [])
 
     def test_probe_failure_restores_before_record(self):
-        with mock.patch('deployer.deploy.probe', return_value={'results': [{'pass': False}]}):
+        failed = [dict(r) for r in self.probe_results]
+        failed[0]['observed'], failed[0]['pass'] = 'block', False
+        with mock.patch('deployer.deploy.probe', return_value={'results': failed}):
             result = deploy.managed_apply(self.args, True)
         self.assertTrue(result['rolled_back'])
         self.assertEqual(json.loads(self.store.raw), self.ir)
@@ -133,6 +140,80 @@ class ManagedTransactionTest(unittest.TestCase):
                 deploy.managed_apply(self.args, True)
         self.assertEqual(json.loads(self.store.raw), self.ir)
         self.assertEqual(len(self.apply_calls), 2)
+
+    def test_incomplete_or_forged_probe_never_publishes_candidate(self):
+        cases = [self.probe_results[:1],
+                 self.probe_results[:-1] + [dict(self.probe_results[0])],
+                 self.probe_results[:-1] + [dict(self.probe_results[-1], id='other')],
+                 [dict(self.probe_results[0], kind='attack')] + self.probe_results[1:],
+                 [dict(self.probe_results[0], expect='block')] + self.probe_results[1:],
+                 [dict(self.probe_results[0], observed='block')] + self.probe_results[1:],
+                 [dict(self.probe_results[0], **{'pass': False})] + self.probe_results[1:]]
+        for result in cases:
+            with self.subTest(result=result):
+                self.lab['text'] = '\n'.join(to_nft(self.ir).splitlines()[1:]) + '\n'
+                self.apply_calls.clear()
+                self.store.events.clear()
+                with mock.patch('deployer.deploy.probe', return_value={'results': result}):
+                    with self.assertRaisesRegex(RuntimeError, 'incomplete probe'):
+                        deploy.managed_apply(self.args, True)
+                self.assertEqual(json.loads(self.store.raw), self.ir)
+                self.assertEqual(len(self.apply_calls), 2)
+                self.assertEqual(self.store.events[-2:], ['publish', 'finish'])
+
+    def test_invalid_watch_interval_fails_before_apply(self):
+        for watch, interval in ((-1, 5), (0, 0), (1, -1)):
+            with self.subTest(watch=watch, interval=interval):
+                self.lab['text'] = '\n'.join(to_nft(self.ir).splitlines()[1:]) + '\n'
+                self.args.watch, self.args.interval = watch, interval
+                with self.assertRaisesRegex(ValueError, 'watch|interval'):
+                    deploy.managed_apply(self.args, True)
+                self.assertEqual(self.apply_calls, [])
+
+    def test_termination_signal_restores_and_retains_no_candidate_record(self):
+        def stop(*_args, **_kwargs):
+            signal.raise_signal(signal.SIGTERM)
+        with mock.patch('deployer.deploy.probe', side_effect=stop):
+            with self.assertRaisesRegex(RuntimeError, 'interrupted by signal'):
+                deploy.managed_apply(self.args, True)
+        self.assertEqual(json.loads(self.store.raw), self.ir)
+        self.assertEqual(len(self.apply_calls), 2)
+        self.assertFalse(self.store.intent_seen)
+
+    def test_managed_probe_timeout_kills_child_and_restores(self):
+        def delayed(*_args, **_kwargs):
+            raise RuntimeError('probe deadline expired')
+        with mock.patch('deployer.deploy.probe', side_effect=delayed):
+            with self.assertRaisesRegex(RuntimeError, 'deadline expired'):
+                deploy.managed_apply(self.args, True)
+        self.assertEqual(json.loads(self.store.raw), self.ir)
+        self.assertEqual(len(self.apply_calls), 2)
+
+    def test_probe_child_timeout_reaps_direct_child(self):
+        child = mock.Mock(pid=123, args=['probe'])
+        child.communicate.side_effect = [subprocess.TimeoutExpired('probe', 1), ('', '')]
+        kill_context = (mock.patch('deployer.deploy.os.killpg') if os.name == 'posix'
+                        else mock.patch.object(child, 'kill'))
+        with mock.patch('deployer.deploy.require_lab'), \
+             mock.patch('deployer.deploy.subprocess.Popen', return_value=child), \
+             kill_context as killed:
+            with self.assertRaisesRegex(RuntimeError, 'deadline expired'):
+                self.real_probe('scenarios/req-001.json', timeout=1)
+            killed.assert_called_once()
+        self.assertEqual(child.communicate.call_count, 2)
+
+    def test_probe_child_signal_exception_reaps_before_reraising(self):
+        child = mock.Mock(pid=123, args=['probe'])
+        child.communicate.side_effect = [RuntimeError('interrupted'), ('', '')]
+        kill_context = (mock.patch('deployer.deploy.os.killpg') if os.name == 'posix'
+                        else mock.patch.object(child, 'kill'))
+        with mock.patch('deployer.deploy.require_lab'), \
+             mock.patch('deployer.deploy.subprocess.Popen', return_value=child), \
+             kill_context as killed:
+            with self.assertRaisesRegex(RuntimeError, 'interrupted'):
+                self.real_probe('scenarios/req-001.json', timeout=1)
+            killed.assert_called_once()
+        self.assertEqual(child.communicate.call_count, 2)
 
     def test_external_change_before_apply_never_writes(self):
         initial = self.lab['text']
@@ -160,9 +241,9 @@ class ManagedTransactionTest(unittest.TestCase):
         self.assertNotIn('finish', self.store.events)
 
     def test_external_writer_during_probe_is_not_clobbered(self):
-        def changed(_):
+        def changed(*_args, **_kwargs):
             self.lab['text'] = 'table ip unmanaged {}\n'
-            return {'results': [{'pass': False}]}
+            return {'results': self.probe_results}
         with mock.patch('deployer.deploy.probe', side_effect=changed):
             with self.assertRaisesRegex(RuntimeError, 'unmanaged'):
                 deploy.managed_apply(self.args, True)
@@ -178,7 +259,9 @@ class ManagedTransactionTest(unittest.TestCase):
                 return
             raise RuntimeError('nft apply failed')
         with mock.patch('deployer.deploy.nft_apply', side_effect=broken):
-            with mock.patch('deployer.deploy.probe', return_value={'results': [{'pass': False}]}):
+            failed = [dict(r) for r in self.probe_results]
+            failed[0]['observed'], failed[0]['pass'] = 'block', False
+            with mock.patch('deployer.deploy.probe', return_value={'results': failed}):
                 with self.assertRaisesRegex(RuntimeError, 'nft apply failed'):
                     deploy.managed_apply(self.args, True)
         self.assertTrue(self.store.intent_seen)
@@ -257,6 +340,43 @@ class StructureAndSecurityTest(unittest.TestCase):
              mock.patch('deployer.managed.live_snapshot', return_value=self.snapshot):
             store.recover(lambda text: actions.append(('apply', text)))
         self.assertEqual(actions, [('apply', rollback), 'publish', 'finish'])
+
+    def test_empty_live_ruleset_recovery_replays_and_records(self):
+        raw = json.dumps(self.ir).encode()
+        rollback = 'flush ruleset\n' + self.snapshot
+        intent = {'before': digest(raw), 'candidate': digest(raw),
+                  'snapshot': digest(self.snapshot.encode()),
+                  'before_ir': base64.b64encode(raw).decode(), 'before_stateful': True,
+                  'before_commit': 'a' * 40,
+                  'candidate_ir': base64.b64encode(raw).decode(), 'candidate_stateful': True,
+                  'rollback_nft': rollback, 'rollback_sha256': digest(rollback.encode())}
+        store = ManagedStore.__new__(ManagedStore)
+        live = {'text': ''}
+        actions = []
+        def apply(text):
+            actions.append('apply')
+            live['text'] = self.snapshot
+        with mock.patch.object(store, '_read', return_value=intent), \
+             mock.patch.object(store, 'publish', side_effect=lambda *args: actions.append('publish')), \
+             mock.patch.object(store, 'finish', side_effect=lambda: actions.append('finish')), \
+             mock.patch('deployer.managed.live_snapshot', side_effect=lambda: live['text']):
+            store.recover(apply)
+        self.assertEqual(actions, ['apply', 'publish', 'finish'])
+
+    def test_recovery_unknown_nonempty_policy_preserves_intent(self):
+        raw = json.dumps(self.ir).encode()
+        rollback = 'flush ruleset\n' + self.snapshot
+        intent = {'before': digest(raw), 'candidate': digest(raw),
+                  'snapshot': digest(self.snapshot.encode()),
+                  'before_ir': base64.b64encode(raw).decode(), 'before_stateful': True,
+                  'before_commit': 'a' * 40,
+                  'candidate_ir': base64.b64encode(raw).decode(), 'candidate_stateful': True,
+                  'rollback_nft': rollback, 'rollback_sha256': digest(rollback.encode())}
+        store = ManagedStore.__new__(ManagedStore)
+        with mock.patch.object(store, '_read', return_value=intent), \
+             mock.patch('deployer.managed.live_snapshot', return_value='table ip foreign {}\n'):
+            with self.assertRaisesRegex(RuntimeError, 'structure'):
+                store.recover(lambda _: self.fail('foreign policy overwritten'))
 
     def test_corrupt_recovery_intent_never_applies(self):
         store = ManagedStore.__new__(ManagedStore)

@@ -223,11 +223,14 @@ class ManagedStore:
             raise RuntimeError('invalid recovery IR')
         structure(saved.split('\n', 1)[1], before_ir, intent['before_stateful'])
         observed = live_snapshot()
-        try:
-            structure(observed, before_ir, intent['before_stateful'])
-        except RuntimeError:
-            # An unknown third-party policy must not be silently overwritten.
-            structure(observed, candidate_ir, intent['candidate_stateful'])
+        if observed.strip():
+            try:
+                structure(observed, before_ir, intent['before_stateful'])
+            except RuntimeError:
+                # An unknown third-party policy must not be silently overwritten.
+                structure(observed, candidate_ir, intent['candidate_stateful'])
+        # An empty *successfully read* ruleset is recoverable only through this
+        # explicit operator command and its validated, durable rollback intent.
         if observed != live_snapshot():
             raise RuntimeError('nft changed during recovery collection')
         # Unknown record state after a crash: revert even if apply had completed.

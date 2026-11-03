@@ -5,7 +5,7 @@
   정답 룰셋 대비 의미 일치율(eval/semantic.py): semantic_match, policy_diff, over_allow, over_block
 배치 실행이면 pipeline/batch.py 가 넘기는 환경변수 BATCH_ID·REP·COMMIT 을 같이 기록해
 결과 CSV 한 줄을 manifest(eval/results/batch-<BATCH_ID>.json)의 실행과 잇는다. 단독 실행이면 빈 값.
-TODO: 동적 추가 탐지율
+동적 추가 탐지율은 실행 1회가 아니라 배치 전체에서 계산하므로 eval/detection.py 가 manifest 로 낸다.
 
 사용: evaluate.py --scenario req-001 --scenario-file scenarios/req-001.json --generator mock \
         --candidate out/candidate.json --validation out/validation.json --deploy out/deploy.json

@@ -1,0 +1,71 @@
+{
+  "id": "req-018",
+  "description": "공격 프로브(nmap 포트 스캔)를 쓰는 시나리오. 침해된 기기의 스캔이 서버·PC 의 어느 포트에서도 응답을 못 받아야 한다. IoT 망 허용 룰이 있어 침해 기기 drop 이 빠지거나(action·missing) 뒤로 밀리면(order) 스캔에 열린 포트가 드러난다. nmap 프로브는 포트 하나씩, 5개 (#26, #32).",
+  "requirements": [
+    "침해된 기기(10.10.10.66)에서 서버와 PC 로 보내는 포트 스캔은 모두 막혀야 한다 (응답 없음, filtered)",
+    "IoT 망의 기기는 서버의 업데이트 포트(8080)를 쓸 수 있다",
+    "IoT 망의 기기는 PC 망의 알림 수신 포트(9000)로 보낼 수 있다",
+    "PC 망은 서버의 웹 서비스(80)를 쓸 수 있다"
+  ],
+  "gold": {
+    "scenario": "req-018",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "침해된 기기(10.10.10.66)에서 서버와 PC 로 보내는 포트 스캔은 모두 막혀야 한다 (응답 없음, filtered)",
+        "src": "10.10.10.66/32",
+        "dst": "any",
+        "proto": "any",
+        "dport": "any",
+        "action": "drop",
+        "priority": 100
+      },
+      {
+        "id": "g-002",
+        "intent": "IoT 망의 기기는 서버의 업데이트 포트(8080)를 쓸 수 있다",
+        "src": "10.10.10.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8080",
+        "action": "accept",
+        "priority": 110
+      },
+      {
+        "id": "g-003",
+        "intent": "IoT 망의 기기는 PC 망의 알림 수신 포트(9000)로 보낼 수 있다",
+        "src": "10.10.10.0/24",
+        "dst": "10.10.20.0/24",
+        "proto": "tcp",
+        "dport": "9000",
+        "action": "accept",
+        "priority": 120
+      },
+      {
+        "id": "g-004",
+        "intent": "PC 망은 서버의 웹 서비스(80)를 쓸 수 있다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "80",
+        "action": "accept",
+        "priority": 130
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "allow" },
+    { "id": "n-002", "kind": "normal", "from": "iot-dev", "to": "10.10.20.10", "proto": "tcp", "port": 9000, "expect": "allow" },
+    { "id": "n-003", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "tool": "nmap", "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 80, "tool": "nmap", "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 22, "tool": "nmap", "expect": "block" },
+    { "id": "a-004", "kind": "attack", "from": "attacker", "to": "10.10.20.10", "proto": "tcp", "port": 9000, "tool": "nmap", "expect": "block" },
+    { "id": "a-005", "kind": "attack", "from": "attacker", "to": "10.10.20.11", "proto": "tcp", "port": 22, "tool": "nmap", "expect": "block" },
+    { "id": "a-006", "kind": "attack", "from": "iot-dev", "to": "10.10.20.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-007", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-008", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-009", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 9000, "expect": "block" },
+    { "id": "a-010", "kind": "attack", "from": "pc", "to": "10.10.10.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-011", "kind": "attack", "from": "server", "to": "10.10.20.10", "proto": "tcp", "port": 9000, "expect": "block" }
+  ]
+}

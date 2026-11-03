@@ -1,0 +1,55 @@
+{
+  "scenario": "req-006",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "Allow LAN PC to access server's management port (8080)",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 1
+    },
+    {
+      "id": "r-002",
+      "intent": "Allow LAN PC and specific IoT device to access server's web service (80)",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 2
+    },
+    {
+      "id": "r-003",
+      "intent": "Allow specific IoT device to access server's web service (80)",
+      "src": "10.10.10.10",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 3
+    },
+    {
+      "id": "r-004",
+      "intent": "Allow IoT device to access its own management page (80)",
+      "src": "10.10.10.10",
+      "dst": "10.10.10.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 4
+    },
+    {
+      "id": "r-005",
+      "intent": "Block all other traffic",
+      "src": "any",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 100
+    }
+  ]
+}

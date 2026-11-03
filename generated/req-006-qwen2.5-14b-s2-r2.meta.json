@@ -1,0 +1,36 @@
+{
+  "model": "qwen2.5:14b",
+  "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+  "ollama_version": "0.40.3",
+  "temperature": 0.7,
+  "seed": 2,
+  "prompt_version": "v2",
+  "scenario": "req-006",
+  "options": {
+    "temperature": 0.7,
+    "seed": 2,
+    "num_ctx": 8192
+  },
+  "time": "2026-11-01T07:28:35+00:00",
+  "attempts": [
+    {
+      "done_reason": "stop",
+      "prompt_eval_count": 1110,
+      "eval_count": 413,
+      "total_duration_ns": 72336798541,
+      "problems": []
+    }
+  ],
+  "round": 2,
+  "parent": "req-006-qwen2.5-14b-s2",
+  "feedback_version": "f1",
+  "feedback": {
+    "file": "generated/req-006-qwen2.5-14b-s2.feedback.json",
+    "stage": "approval",
+    "source": {
+      "batch_id": "20261101-161520",
+      "rep": 1,
+      "commit": "f3a65980b1e82f05b3ead9b3ae6eac65dbf17c6a"
+    }
+  }
+}

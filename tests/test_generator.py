@@ -2,11 +2,13 @@
 
 import json
 import socket
+import tempfile
 import unittest
+from pathlib import Path
 
 from common.ir import ROOT, load_json
 from generator import llm
-from generator.generate import NUM_CTX, generate, output_stem, user_message
+from generator.generate import NUM_CTX, feedback_message, generate, load_feedback, output_stem, user_message
 
 SCENARIO = load_json(ROOT / "scenarios" / "req-004.json")
 GOOD = json.dumps({"rules": [{
@@ -113,6 +115,88 @@ class GenerateTest(unittest.TestCase):
     def test_output_stem(self):
         self.assertEqual(output_stem("req-001", "qwen2.5:14b", 1), "req-001-qwen2.5-14b-s1")
         self.assertEqual(output_stem("req-001", "hf.co/user/m:Q4", 2), "req-001-hf.co-user-m-Q4-s2")
+        self.assertEqual(output_stem("req-001", "qwen2.5:14b", 1, 1), "req-001-qwen2.5-14b-s1")
+        self.assertEqual(output_stem("req-001", "qwen2.5:14b", 1, 2), "req-001-qwen2.5-14b-s1-r2")
+
+
+PREV_META = {"model": "fake:7b", "digest": DIGEST, "ollama_version": "0.12.3", "temperature": 0.7,
+             "seed": 3, "prompt_version": "v1"}
+DEPLOY_FB = {
+    "scenario": "req-004", "candidate": "req-004-fake-7b-s3", "round": 1,
+    "source": {"batch_id": "20261101-120000", "rep": 1, "commit": "abc1234"},
+    "stage": "deploy",
+    "validation": {"ok": True, "risk": "low", "errors": [], "reasons": []},
+    "failed_probes": [
+        {"id": "a-001", "kind": "attack", "from": "attacker", "from_ip": "10.10.10.66", "to": "10.10.30.10",
+         "proto": "tcp", "port": 8080, "expect": "block", "observed": "allow"},
+        {"id": "n-009", "kind": "normal", "from": "pc", "from_ip": "10.10.20.10", "to": "10.10.30.10",
+         "proto": "icmp", "expect": "allow", "observed": "block"},
+    ],
+}
+
+
+class FeedbackTest(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.dir = Path(tmp.name)
+        (self.dir / "req-004-fake-7b-s3.json").write_text(
+            json.dumps({"scenario": "req-004", **json.loads(GOOD)}), encoding="utf-8")
+        (self.dir / "req-004-fake-7b-s3.meta.json").write_text(json.dumps(PREV_META), encoding="utf-8")
+
+    def write_fb(self, **changes):
+        path = self.dir / "req-004-fake-7b-s3.feedback.json"
+        path.write_text(json.dumps({**DEPLOY_FB, **changes}), encoding="utf-8")
+        return path
+
+    def test_deploy_message_lists_failed_probes_and_allow_meaning(self):
+        text = feedback_message(DEPLOY_FB)
+        self.assertIn("10.10.10.66 → 10.10.30.10 tcp 8080: 차단되어야 하는데 통과했다", text)
+        self.assertIn("10.10.20.10 → 10.10.30.10 icmp: 허용되어야 하는데 차단됐다", text)
+        self.assertIn("포트를 열어 두지 않았더라도", text)  # observed allow 의 뜻 (#45)
+        for key in ("a-001", "attacker", "nmap"):  # 프로브 id·호스트 이름·도구는 넣지 않는다
+            self.assertNotIn(key, text)
+
+    def test_validation_and_approval_messages(self):
+        v = feedback_message({**DEPLOY_FB, "stage": "validation", "failed_probes": [],
+                              "validation": {"ok": False, "risk": None, "errors": ["rules/0/dst: bad"], "reasons": []}})
+        self.assertIn("- rules/0/dst: bad", v)
+        a = feedback_message({**DEPLOY_FB, "stage": "approval", "failed_probes": [],
+                              "validation": {"ok": True, "risk": "high", "errors": [],
+                                             "reasons": ["r-001: accept 범위가 /16 보다 넓음"]}})
+        self.assertIn("고위험", a)
+        self.assertIn("- r-001: accept 범위가 /16 보다 넓음", a)
+
+    def test_empty_evidence_or_unknown_stage_is_refused(self):
+        for fb in ({**DEPLOY_FB, "failed_probes": []}, {**DEPLOY_FB, "stage": "approval"},
+                   {**DEPLOY_FB, "stage": "applied"}):
+            with self.subTest(stage=fb["stage"]), self.assertRaises(ValueError):
+                feedback_message(fb)
+
+    def test_load_feedback_checks_scenario_round_and_files(self):
+        fb, text, meta = load_feedback(self.write_fb(), "req-004")
+        self.assertNotIn("scenario", json.loads(text))  # LLM 이 낸 형식으로 되돌린다
+        self.assertEqual(meta["seed"], 3)
+        with self.assertRaisesRegex(ValueError, "시나리오"):
+            load_feedback(self.write_fb(), "req-001")
+        with self.assertRaisesRegex(ValueError, "round"):
+            load_feedback(self.write_fb(round=2), "req-004")
+        with self.assertRaisesRegex(ValueError, "후보 파일 없음"):
+            load_feedback(self.write_fb(candidate="req-004-fake-7b-s9"), "req-004")
+
+    def test_round_two_conversation_and_meta(self):
+        path = self.write_fb()
+        fb, text, prev_meta = load_feedback(path, "req-004")
+        client = FakeClient(GOOD)
+        out, meta = generate(SCENARIO, "fake:7b", "v1", 0.7, 3, client, feedback=(fb, text, prev_meta, path))
+        sent = client.calls[0]["messages"]
+        self.assertEqual([m["role"] for m in sent], ["system", "user", "assistant", "user"])
+        self.assertEqual(sent[2]["content"], text)
+        self.assertEqual(sent[3]["content"], feedback_message(fb))
+        self.assertEqual((meta["round"], meta["parent"], meta["feedback"]["stage"]), (2, "req-004-fake-7b-s3", "deploy"))
+        self.assertEqual(meta["feedback"]["source"], DEPLOY_FB["source"])
+        for key in ("gold", "probes", "g-001"):
+            self.assertNotIn(key, json.dumps(sent, ensure_ascii=False))
 
 
 class ClientTest(unittest.TestCase):

@@ -1,0 +1,25 @@
+{
+  "scenario": "req-012",
+  "rules": [
+    {
+      "id": "g-001",
+      "intent": "단, IoT 기기(10.10.10.10)는 서버의 웹 서비스(80)에 접속할 수 있다",
+      "src": "10.10.10.10/32",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 100
+    },
+    {
+      "id": "g-002",
+      "intent": "IoT 망에서 나가는 통신은 모두 막는다",
+      "src": "10.10.10.0/24",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 110
+    }
+  ]
+}

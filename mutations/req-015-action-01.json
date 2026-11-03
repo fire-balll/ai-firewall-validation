@@ -1,0 +1,45 @@
+{
+  "scenario": "req-015",
+  "rules": [
+    {
+      "id": "g-001",
+      "intent": "단, 침해된 기기(10.10.10.66)는 ping 도 할 수 없다",
+      "src": "10.10.10.66/32",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "accept",
+      "priority": 100
+    },
+    {
+      "id": "g-002",
+      "intent": "PC는 서버에 ping 과 웹 서비스(80)만 쓸 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 110
+    },
+    {
+      "id": "g-003",
+      "intent": "PC는 서버에 ping 과 웹 서비스(80)만 쓸 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 120
+    },
+    {
+      "id": "g-004",
+      "intent": "IoT 망의 기기는 서버에 ping 할 수 있다",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 130
+    }
+  ]
+}

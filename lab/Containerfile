@@ -3,3 +3,5 @@ RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -
       nftables iproute2 iputils-ping traceroute curl netcat-openbsd \
       nmap hping3 tcpdump python3 \
     && rm -rf /var/lib/apt/lists/*
+COPY udp-echo.py /usr/local/bin/udp-echo
+RUN chmod +x /usr/local/bin/udp-echo

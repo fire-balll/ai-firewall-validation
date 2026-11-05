@@ -44,5 +44,17 @@ else
   fail=1
 fi
 
+echo "[4] UDP: 차단 상태에서 응답 없음, lan -> svc:53/udp 허용하면 server 의 udp-echo 가 응답"
+reset_fw ""
+blocked=$($PODMAN exec pc sh -c 'echo fwlab-udp | nc -u -w 2 10.10.30.10 53' 2>/dev/null)
+reset_fw 'ip saddr 10.10.20.0/24 udp dport 53 accept'
+allowed=$($PODMAN exec pc sh -c 'echo fwlab-udp | nc -u -w 2 10.10.30.10 53' 2>/dev/null)
+if [[ -z "$blocked" && "$allowed" == fwlab-udp ]]; then
+  echo "  OK: 차단 시 응답 없음, 허용 시 응답 받음"
+else
+  echo "  FAIL: 차단 시 '$blocked', 허용 시 '$allowed'. server 의 udp-echo 가 떠 있는지 확인할 것 (lab 이미지 다시 빌드)"
+  fail=1
+fi
+
 reset_fw ""
 exit $fail

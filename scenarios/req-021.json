@@ -1,0 +1,72 @@
+{
+  "id": "req-021",
+  "description": "범위 허용 안에 예외 대역 두 개. 예외 drop 두 개가 범위 accept 의 양 끝을 가린다. 예외 하나의 경계가 틀리면 두 drop 이 함께 accept 전체를 가린다(union shadow). 룰을 둘씩만 비교하면 각 drop 이 accept 와 일부만 겹쳐 보인다. range 오류용.",
+  "requirements": [
+    "PC 망은 서버의 개발 포트 대역(8000-8100)을 쓸 수 있다",
+    "단, 그중 구버전 포트 대역(8000-8019)은 보안 문제로 PC 망에서 쓸 수 없다",
+    "단, 그중 업데이트·관리 포트 대역(8080-8100)도 PC 망에서 쓸 수 없다",
+    "서버의 업데이트 포트(8080)는 IoT 기기(10.10.10.10) 한 대만 쓸 수 있다"
+  ],
+  "gold": {
+    "scenario": "req-021",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "단, 그중 구버전 포트 대역(8000-8019)은 보안 문제로 PC 망에서 쓸 수 없다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8000-8019",
+        "action": "drop",
+        "priority": 100
+      },
+      {
+        "id": "g-002",
+        "intent": "단, 그중 업데이트·관리 포트 대역(8080-8100)도 PC 망에서 쓸 수 없다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8080-8100",
+        "action": "drop",
+        "priority": 110
+      },
+      {
+        "id": "g-003",
+        "intent": "PC 망은 서버의 개발 포트 대역(8000-8100)을 쓸 수 있다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8000-8100",
+        "action": "accept",
+        "priority": 120
+      },
+      {
+        "id": "g-004",
+        "intent": "서버의 업데이트 포트(8080)는 IoT 기기(10.10.10.10) 한 대만 쓸 수 있다",
+        "src": "10.10.10.10/32",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "8080",
+        "action": "accept",
+        "priority": 130
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8020, "expect": "allow" },
+    { "id": "n-002", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8079, "expect": "allow" },
+    { "id": "n-003", "kind": "normal", "from": "pc2", "to": "10.10.30.10", "proto": "tcp", "port": 8050, "expect": "allow" },
+    { "id": "n-004", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8000, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8019, "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-004", "kind": "attack", "from": "pc2", "to": "10.10.30.10", "proto": "tcp", "port": 8100, "expect": "block" },
+    { "id": "a-005", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8101, "expect": "block" },
+    { "id": "a-006", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 7999, "expect": "block" },
+    { "id": "a-007", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
+    { "id": "a-008", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8050, "expect": "block" },
+    { "id": "a-009", "kind": "attack", "from": "guest", "to": "10.10.30.10", "proto": "tcp", "port": 8050, "expect": "block" },
+    { "id": "a-010", "kind": "attack", "from": "pc", "to": "10.10.10.10", "proto": "tcp", "port": 8050, "expect": "block" },
+    { "id": "a-011", "kind": "attack", "from": "iot-dev", "to": "10.10.20.10", "proto": "tcp", "port": 8080, "expect": "block" }
+  ]
+}

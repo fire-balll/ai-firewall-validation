@@ -26,6 +26,17 @@ def exec_in(container, *cmd, stdin=None, timeout=30):
     )
 
 
+def exec_detached(container, *cmd, timeout=30):
+    """컨테이너 안에서 명령을 백그라운드로 띄운다(podman exec -d). 띄우지 못하면 RuntimeError.
+
+    띄운 프로세스는 컨테이너 안에서 계속 돈다. 호출한 쪽이 죽어도 남아야 하는 작업(데드맨 타이머)에 쓴다.
+    """
+    res = subprocess.run([*PODMAN, "exec", "-d", container, *cmd],
+                         capture_output=True, text=True, timeout=timeout)
+    if res.returncode != 0:
+        raise RuntimeError(f"podman exec -d 실패 (exit {res.returncode}): {res.stderr.strip()}")
+
+
 def running_containers():
     res = subprocess.run([*PODMAN, "ps", "--format", "{{.Names}}"],
                          capture_output=True, text=True, timeout=30)

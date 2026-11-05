@@ -39,7 +39,7 @@ IR 에는 상태 추적 룰을 끌 필드가 없어서, state 후보는 **IR 이
 
 ## 파일 목록
 
-원본은 모두 `scenarios/<시나리오>.json` 의 gold 다. "정적"은 현재 `validator/validate.py` 의 risk(모두 ok=true), "실패 프로브"는 `common/sim.py` 시뮬레이터로 시나리오 프로브를 돌렸을 때 정답과 판정이 달라지는 프로브다. 랩 실측이 아니다. state 유형은 시뮬레이터로 드러나지 않으므로 #23 의 랩 결과(Mac, rootless Podman)를 괄호로 적었다.
+원본은 모두 `scenarios/<시나리오>.json` 의 gold 다. req-011 ~ 020(req-019 제외)은 4주차에 추가했다. 위 유형 표의 "적용할 시나리오" 열은 req-001 ~ 010 기준이다. "정적"은 현재 `validator/validate.py` 의 risk(모두 ok=true), "실패 프로브"는 `common/sim.py` 시뮬레이터로 시나리오 프로브를 돌렸을 때 정답과 판정이 달라지는 프로브다. 랩 실측이 아니다. state 유형은 시뮬레이터로 드러나지 않으므로 #23 의 랩 결과(Mac, rootless Podman)를 괄호로 적었다.
 
 | 파일 | 원본 | 유형 | 바꾼 내용 | 정적 | 실패 프로브 (시뮬레이터) |
 | --- | --- | --- | --- | --- | --- |
@@ -69,3 +69,30 @@ IR 에는 상태 추적 룰을 끌 필드가 없어서, state 후보는 **IR 이
 | req-010-extra-01.json | req-010 | extra | x-001(any → any, proto any, accept, priority 200) 추가 | high | a-003~a-005 (#13 이후 a-006~a-010, #33 이후 a-011 도) |
 | req-010-order-01.json | req-010 | order | g-001(침해 기기 drop, 100) 과 g-004(IoT → 서버 8080 accept, 130) 의 priority 를 맞바꿈 | low | a-001 |
 | req-010-state-01.json | req-010 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-005) |
+| req-011-extra-01.json | req-011 | extra | x-001(10.10.0.0/16 → 서버 8080, accept, priority 200) 추가 | low | a-001 |
+| req-011-missing-01.json | req-011 | missing | g-002(IoT → 서버 8080) 삭제 | low | n-002 |
+| req-011-state-01.json | req-011 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001, n-002) |
+| req-012-action-01.json | req-012 | action | g-002(IoT 망 나가는 통신 차단) 의 action drop → accept | high | a-001~a-004 |
+| req-012-order-01.json | req-012 | order | g-001(IoT 기기 → 서버 80 accept, 100) 과 g-002(IoT 망 drop, 110) 의 priority 를 맞바꿈 | high | n-001 |
+| req-012-state-01.json | req-012 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001) |
+| req-013-port-01.json | req-013 | port | g-002(PC → 서버 SSH) 의 dport 22 → 8080 | low | n-002, a-002 |
+| req-013-proto-01.json | req-013 | proto | g-002(PC → 서버 SSH) 의 proto tcp → udp | low | n-002 |
+| req-013-state-01.json | req-013 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
+| req-014-order-01.json | req-014 | order | g-001(PC → 서버 8080 drop, 100) 과 g-002(PC → 서버 8000-8100 accept, 110) 의 priority 를 맞바꿈 | high | a-001 |
+| req-014-range-01.json | req-014 | range | g-002 의 dport 8000-8100 → 8000-8079 | low | n-002 |
+| req-014-state-01.json | req-014 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
+| req-015-action-01.json | req-015 | action | g-001(침해 기기 차단) 의 action drop → accept | high | a-001 |
+| req-015-proto-01.json | req-015 | proto | g-004(IoT → 서버 ping) 의 proto icmp → any | high | a-003 |
+| req-015-state-01.json | req-015 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
+| req-016-narrow-01.json | req-016 | narrow | g-004(IoT → 서버 망 ping) 의 dst 10.10.30.0/24 → 10.10.30.20/32 (없는 호스트) | low | n-002 |
+| req-016-state-01.json | req-016 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
+| req-016-widen-01.json | req-016 | widen | g-001(침해 기기 → PC 망 drop) 의 src 10.10.10.66/32 → 10.10.10.0/24 | high | n-001 |
+| req-017-missing-01.json | req-017 | missing | g-007(PC 망 → IoT 기기 관리 페이지 80) 삭제 | low | n-006 |
+| req-017-port-any-01.json | req-017 | port-any | g-004(IoT 기기 → 서버 8080) 의 dport 8080 → any | high | a-005 |
+| req-017-state-01.json | req-017 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-007) |
+| req-018-state-01.json | req-018 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
+| req-018-swap-01.json | req-018 | swap | g-003 의 src 와 dst 를 맞바꿈 (IoT → PC 9000 이 PC → IoT 9000 으로) | low | n-002 |
+| req-018-widen-01.json | req-018 | widen | g-002(IoT → 서버 8080) 의 src 10.10.10.0/24 → any | high | a-008 |
+| req-020-narrow-01.json | req-020 | narrow | g-002(PC 망 → 서버 80) 의 src 10.10.20.0/24 → 10.10.20.10/32 | low | n-002 |
+| req-020-state-01.json | req-020 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
+| req-020-widen-01.json | req-020 | widen | g-001(관리자 PC → 서버 8080) 의 src 10.10.20.10/32 → 10.10.20.0/24 | low | a-001 |

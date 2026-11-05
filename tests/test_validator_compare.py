@@ -35,7 +35,7 @@ class OfflineComparisonTest(unittest.TestCase):
 
     def test_repository_mutations_preserve_mode_boundary(self):
         paths = sorted((ROOT / 'mutations').glob('req-*-*.json'))
-        self.assertEqual(len(paths), 26)
+        self.assertEqual(len(paths), 53)
         for path in paths:
             scenario = path.name.split('-')[0] + '-' + path.name.split('-')[1]
             before_path = ROOT / 'scenarios' / (scenario + '.json')

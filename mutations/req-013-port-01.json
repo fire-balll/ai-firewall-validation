@@ -1,0 +1,35 @@
+{
+  "scenario": "req-013",
+  "rules": [
+    {
+      "id": "g-001",
+      "intent": "PC는 서버의 웹(HTTP)과 SSH 를 쓸 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 100
+    },
+    {
+      "id": "g-002",
+      "intent": "PC는 서버의 웹(HTTP)과 SSH 를 쓸 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 110
+    },
+    {
+      "id": "g-003",
+      "intent": "IoT 기기는 서버의 웹(HTTP)만 쓸 수 있다",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 120
+    }
+  ]
+}

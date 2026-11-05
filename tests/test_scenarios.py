@@ -58,6 +58,24 @@ class ScenarioTest(unittest.TestCase):
             with self.subTest(scenario=s["id"]):
                 self.assertEqual(analyze(s, self.host_ips)["uncovered"], [])
 
+    def test_unobserved_same_policy_is_equivalent_not_missed(self):
+        # #52: drop 룰을 빼거나 넓혀도 기본 정책 drop 이 같은 결과면 오류가 아니다
+        s = load_json(ROOT / "scenarios" / "req-012.json")
+        result = analyze(s, self.host_ips)
+        for name in ("missing:g-002", "swap:g-002", "widen:g-002.src->any"):
+            self.assertIn(name, result["equivalent"])
+            self.assertNotIn(name, result["missed"])
+
+    def test_unobserved_policy_change_is_missed(self):
+        # 랩에 없는 호스트(10.10.20.200)만 바뀌는 오류는 정답과 다르지만 랩 프로브로 드러나지 않는다
+        s = {"id": "t", "gold": {"scenario": "t", "rules": [
+                 dict(rule("10.10.20.200/32", "10.10.30.10/32", "tcp", "80"), id="g-001")]},
+             "probes": [{"id": "a-001", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp",
+                         "port": 80, "expect": "block"}]}
+        result = analyze(s, self.host_ips)
+        self.assertIn("action:g-001", result["missed"])
+        self.assertNotIn("action:g-001", result["equivalent"])
+
 
 def rule(src, dst, proto, dport, action="accept"):
     return {"id": "r", "intent": "t", "src": src, "dst": dst, "proto": proto, "dport": dport,

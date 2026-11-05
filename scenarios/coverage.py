@@ -10,8 +10,10 @@
 없는 포트 하나(OTHER_PORT)다.
 
 드러나지 않은 변형은 셋으로 나눈다.
-  equivalent  오류가 아니다. 순서를 바꾼 두 룰이 겹치지 않거나 action 이 같아 어떤 패킷에도 정답과 같다
-  missed      랩에서 보낼 수 있는 어떤 프로브로도 드러나지 않는다 (랩 호스트·네트워크가 부족)
+  equivalent  오류가 아니다. 어떤 패킷에도 정답과 같다. 순서를 바꾼 두 룰이 겹치지 않거나 action 이 같은 경우는
+              바로 알 수 있고, 나머지는 랩 프로브로 차이가 안 날 때 validator/compare.py 의 전체 비교로 확인한다
+              (예: drop 룰을 넓히거나 빼도 기본 정책 drop 이 같은 결과를 냄, #52)
+  missed      정답과 다르지만 랩에서 보낼 수 있는 어떤 프로브로도 드러나지 않는다 (랩 호스트·네트워크가 부족)
   uncovered   랩 프로브로 드러낼 수 있는데 시나리오에 그 프로브가 없다 -> suggest 에 추가 후보
 
 state 유형(응답 트래픽 누락)은 IR 이 정답과 같아 시뮬레이터로 만들 수 없으므로 여기서 다루지 않는다.
@@ -33,6 +35,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.ir import ROOT, load_json  # noqa: E402
 from common.sim import decide  # noqa: E402
+from validator.compare import compare_offline  # noqa: E402
 from common.topology import hosts  # noqa: E402
 
 BASE_PORTS = (80, 8080)
@@ -129,6 +132,15 @@ def verdicts(rules, probes, host_ips):
     return [decide(rs, host_ips[p["from"]], p["to"], p["proto"], p.get("port")) for p in probes]
 
 
+def policy_changed(gold, mutant):
+    """랩 프로브와 상관없이 정답과 다르게 판정되는 패킷이 있는가 (validator/compare.py 의 전체 비교).
+
+    비교 상한을 넘으면 ComparisonUnavailable 이 그대로 올라간다. equivalent 와 missed 중 어느 쪽으로도 꾸며 넣지 않는다.
+    """
+    counts = compare_offline({"rules": gold}, {"rules": mutant}, before_stateful=True, after_stateful=True)["counts"]
+    return counts["allow_to_block"] + counts["block_to_allow"] > 0
+
+
 def analyze(scenario, host_ips):
     gold = scenario["gold"]["rules"]
     probes = scenario["probes"]
@@ -146,8 +158,10 @@ def analyze(scenario, host_ips):
         diff = {k for k, v in enumerate(verdicts(m, universe, host_ips)) if v != gold_u[k]}
         if diff:
             uncovered[name] = diff
-        else:
+        elif policy_changed(gold, m):
             missed.append(name)
+        else:
+            equivalent.append(name)
 
     # 드러낼 수 있는 변형을 가장 많이 덮는 프로브부터 고른다 (greedy set cover)
     suggest, left = [], dict(uncovered)

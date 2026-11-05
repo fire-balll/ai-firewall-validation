@@ -368,7 +368,7 @@ class NftCheckTest(unittest.TestCase):
                     mock.patch("validator.validate.subprocess.run", return_value=res):
                 path = self.write_candidate(d)
                 buf = io.StringIO()
-                with mock.patch("sys.argv", ["validate.py", path, "--nft-check"]), \
+                with mock.patch("sys.argv", ["validate.py", path, "--nft-check", "--stateful", "yes"]), \
                         mock.patch("sys.stdout", buf), mock.patch("sys.stderr", io.StringIO()), \
                         self.assertRaises(SystemExit) as cm:
                     main()
@@ -380,7 +380,7 @@ class NftCheckTest(unittest.TestCase):
         res = nft_done(1, b"Error: syntax error")
         with tempfile.TemporaryDirectory() as d, \
                 mock.patch("validator.validate.subprocess.run", return_value=res):
-            out = json.loads(self.run_main(self.write_candidate(d), "--nft-check"))
+            out = json.loads(self.run_main(self.write_candidate(d), "--nft-check", "--stateful", "yes"))
         self.assertEqual((out["ok"], out["risk"]), (False, None))
         self.assertEqual(out["errors"], ["nft -c: Error: syntax error"])
 

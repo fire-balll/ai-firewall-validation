@@ -14,6 +14,8 @@ OPNsense savepoint 와 같은 구조를 nftables 로 구현한다.
 
 import argparse
 import json
+import os
+import signal
 import subprocess
 import sys
 import time
@@ -32,24 +34,204 @@ def nft_apply(text):
 
 
 def snapshot():
-    res = exec_in(FW, "nft", "list", "ruleset")
+    # Keep rollback text on the same stateless rendering used by live_snapshot:
+    # ordinary list output embeds changing counter values that structure() must
+    # not equate with the stable policy/IR representation.
+    res = exec_in(FW, "nft", "-n", "-y", "-s", "list", "ruleset")
     if res.returncode != 0:
         raise RuntimeError(f"nft list 실패: {res.stderr.strip()}")
     return "flush ruleset\n" + res.stdout
 
 
-def probe(scenario_path):
+def probe(scenario_path, timeout=None):
     # 프로브 전후로 랩이 온전해야 결과를 믿을 수 있다 (도중에 꺼져도 거짓 block 이 나온다)
     require_lab()
-    res = subprocess.run(
+    if timeout is None:
+        # Legacy path still bounds its child, independent of managed watch time.
+        timeout = 300
+    if timeout <= 0:
+        raise RuntimeError('probe deadline expired')
+    proc = subprocess.Popen(
         [sys.executable, str(ROOT / "prober" / "probe.py"), scenario_path],
-        capture_output=True, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        start_new_session=(os.name == 'posix'),
     )
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
+    except BaseException as ex:
+        # Timeouts and termination signals both own the direct child and its
+        # nested podman process. Reap before the managed rollback begins.
+        try:
+            if os.name == 'posix':
+                os.killpg(proc.pid, signal.SIGKILL)
+            else:
+                proc.kill()
+        except ProcessLookupError:
+            pass
+        proc.communicate()
+        if isinstance(ex, subprocess.TimeoutExpired):
+            raise RuntimeError('probe deadline expired') from ex
+        raise
+    res = subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
     if res.returncode != 0:
         lines = res.stderr.strip().splitlines()
         raise RuntimeError(f"prober 실패 (exit {res.returncode}): {lines[-1] if lines else ''}")
     require_lab()
     return json.loads(res.stdout)
+
+
+def complete_probe(result, expected):
+    """Require one observed row per scenario probe, including normal traffic."""
+    if not isinstance(result, dict) or not isinstance(result.get('results'), list):
+        raise RuntimeError('incomplete probe observation')
+    rows = result['results']
+    if len(rows) != len(expected):
+        raise RuntimeError('incomplete probe observation')
+    seen = set()
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {'id', 'kind', 'expect', 'observed', 'pass'}:
+            raise RuntimeError('incomplete probe observation')
+        ident = row['id']
+        if not isinstance(ident, str) or ident not in expected or ident in seen:
+            raise RuntimeError('incomplete probe observation')
+        seen.add(ident)
+        reference = expected[ident]
+        if (row['kind'] != reference['kind'] or row['expect'] != reference['expect'] or
+                row['observed'] not in ('allow', 'block') or
+                type(row['pass']) is not bool or
+                row['pass'] != (row['observed'] == row['expect'])):
+            raise RuntimeError('incomplete probe observation')
+    return rows
+
+def restore_managed(store, before, candidate, stateful, saved, observe):
+    """Do not erase an uncooperative writer's policy during rollback.
+
+    An atomic nft apply can fail before changing the ruleset, or another writer
+    can modify it after our apply. Only the known before/candidate structure may
+    be restored automatically; anything else retains the durable intent.
+    """
+    from deployer.managed import structure
+    observed = observe()
+    try:
+        structure(observed, candidate, stateful)
+    except RuntimeError:
+        structure(observed, json.loads(before.ir_bytes), before.stateful)
+        if observed != observe():
+            raise RuntimeError('nft changed during managed restoration')
+        store.publish(before.ir_bytes, before.stateful, before.commit, observed)
+        store.finish()
+        return
+    # The cooperative lock is not a kernel fence against external nft writers.
+    if observed != observe():
+        raise RuntimeError('nft changed during managed restoration')
+    nft_apply(saved)
+    restored = observe()
+    structure(restored, json.loads(before.ir_bytes), before.stateful)
+    store.publish(before.ir_bytes, before.stateful, before.commit, restored)
+    store.finish()
+
+def managed_apply(args, stateful):
+    """Separate opt-in path; the legacy experiment deployer stays unchanged."""
+    from deployer.managed import ManagedStore, digest, structure
+    from validator.replacement import compare_current
+    from validator.validate import validate
+
+    out = {"stateful": stateful, "applied": False, "rolled_back": False,
+           "aborted": False, "error": None, "t_apply": None, "t_detect": None,
+           "t_restored": None, "detect_s": None, "mttr_s": None, "probe": None}
+    store = ManagedStore(args.managed_store)
+    if (type(args.watch) is not int or args.watch < 0 or
+            type(args.interval) is not int or args.interval <= 0):
+        raise ValueError('watch must be nonnegative and interval positive')
+    scenario = load_json(args.scenario)
+    probes = scenario.get('probes')
+    if (not isinstance(probes, list) or not probes or
+            any(not isinstance(p, dict) or not isinstance(p.get('id'), str) or
+                not isinstance(p.get('kind'), str) or p.get('expect') not in ('allow', 'block')
+                for p in probes)):
+        raise RuntimeError('invalid scenario probes')
+    expected = {p['id']: p for p in probes}
+    if len(expected) != len(probes):
+        raise RuntimeError('duplicate scenario probe IDs')
+    raw = Path(args.ruleset).read_bytes()
+    if not args.expected_sha256 or digest(raw) != args.expected_sha256:
+        raise RuntimeError('candidate changed since validation')
+    candidate = json.loads(raw)
+    check = validate(candidate, nft=True, stateful=stateful)
+    if not check['ok']:
+        raise RuntimeError('candidate validation failed; no managed verdict')
+    if check['risk'] == 'high' and not args.approved_high:
+        raise RuntimeError('high-risk candidate requires explicit approval')
+    commit = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'],
+                            capture_output=True, text=True, check=True).stdout.strip()
+    with store.locked():
+        before = store.current()  # actual nft + persisted IR structure and digest
+        if before.snapshot_token != args.expected_current:
+            raise RuntimeError('current changed since validation/approval')
+        comparison = compare_current(candidate, candidate_stateful=stateful, provider=store)
+        if comparison.get('status') != 'offline_only':
+            raise RuntimeError('managed comparison unavailable')
+        changed = comparison['counts']['allow_to_block'] + comparison['counts']['block_to_allow']
+        if changed and not args.approved_replacement:
+            raise RuntimeError('replacement policy change requires explicit approval')
+        # Keep a restorable full nft dump, not the stateless digest observation.
+        saved = snapshot()
+        if store.current() != before:
+            raise RuntimeError('current changed before managed intent')
+        store.intent(before, raw, stateful, saved)
+        attempted = False
+        watched_signals = (signal.SIGTERM,) + ((signal.SIGHUP,) if hasattr(signal, 'SIGHUP') else ())
+        previous_handlers = {}
+        def interrupted(signum, _frame):
+            # Defer termination to the transaction's rollback handler.
+            signal.signal(signum, signal.SIG_IGN)
+            raise RuntimeError(f'managed transaction interrupted by signal {signum}')
+        try:
+            for sig in watched_signals:
+                previous_handlers[sig] = signal.signal(sig, interrupted)
+            # Recheck under the lock immediately before the only nft write.
+            from validator.live_current import live_snapshot as observe
+            if digest(observe().encode()) != before.snapshot_token:
+                raise RuntimeError('current changed immediately before apply')
+            attempted = True
+            nft_apply(to_nft(candidate, stateful=stateful))
+            structure(observe(), candidate, stateful)
+            out['applied'] = True
+            out['t_apply'] = time.time()
+            deadline = out['t_apply'] + args.watch
+            while True:
+                result = probe(args.scenario, timeout=max(1, deadline - time.time()))
+                out['probe'] = result
+                rows = complete_probe(result, expected)
+                if args.watch and time.time() > deadline:
+                    raise RuntimeError('probe watch deadline expired')
+                if not all(r['pass'] for r in rows):
+                    out['t_detect'] = time.time()
+                    restore_managed(store, before, candidate, stateful, saved, observe)
+                    out['t_restored'] = time.time()
+                    out['rolled_back'] = True
+                    out['detect_s'] = round(out['t_detect'] - out['t_apply'], 3)
+                    out['mttr_s'] = round(out['t_restored'] - out['t_detect'], 3)
+                    return out
+                if time.time() + args.interval > deadline:
+                    break
+                time.sleep(args.interval)
+            observed = observe()
+            structure(observed, candidate, stateful)
+            store.publish(raw, stateful, commit, observed)
+            store.finish()
+            return out
+        except BaseException:
+            # An interrupted apply or failed readback cannot become a success.
+            # If restoration/recording fails, intent remains as a recovery fence.
+            if attempted:
+                restore_managed(store, before, candidate, stateful, saved, observe)
+            else:
+                store.finish()
+            raise
+        finally:
+            for sig, handler in previous_handlers.items():
+                signal.signal(sig, handler)
 
 
 def main():
@@ -60,9 +242,26 @@ def main():
     ap.add_argument("--interval", type=int, default=5, help="프로브 간격(초)")
     ap.add_argument("--stateless", action="store_true",
                     help="상태 추적 룰 없이 적용 (오류 주입 state 유형). 생략 시 후보 파일명으로 판단")
+    ap.add_argument('--managed-store', help='protected POSIX managed current directory (opt-in)')
+    ap.add_argument('--approved-high', action='store_true', help='explicit high risk approval for managed path')
+    ap.add_argument('--approved-replacement', action='store_true', help='explicit replacement difference approval')
+    ap.add_argument('--expected-sha256', help='validator-observed candidate byte digest')
+    ap.add_argument('--expected-current', help='validator-observed baseline nft digest')
     args = ap.parse_args()
 
     stateful = not args.stateless and stateful_for(args.ruleset)
+    if args.managed_store:
+        try:
+            out = managed_apply(args, stateful)
+        except BaseException as ex:
+            print(f'managed apply aborted: {type(ex).__name__}: {ex}', file=sys.stderr)
+            sys.exit(1)  # no result JSON/CSV on incomplete observation
+        json.dump(out, sys.stdout, ensure_ascii=False, indent=2)
+        print()
+        return
+    if os.environ.get('FW_MANAGED_STORE'):
+        print('managed 호스트에서 레거시 적용 금지', file=sys.stderr)
+        sys.exit(1)
     out = {"stateful": stateful, "applied": False, "rolled_back": False, "aborted": False, "error": None,
            "t_apply": None, "t_detect": None, "t_restored": None,
            "detect_s": None, "mttr_s": None, "probe": None}

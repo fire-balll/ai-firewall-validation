@@ -13,9 +13,11 @@ UDP 에코 서비스의 응답 없음, ping 응답 없음)만 block 으로 판�
 종료 코드·메시지는 lab/Containerfile 이미지(debian bookworm netcat-openbsd, iputils-ping, curl 7.88,
 nmap 7.93, hping3 3.0.0-alpha-2, python3 3.11)에서 확인했다.
 
-TODO: 실패 사유 상세화
+결과마다 판정 근거(evidence, 예: "nc: Connection refused (방화벽 통과, 포트 닫힘)")를 남긴다.
+실행 실패 메시지는 원인을 분류한다: 컨테이너 없음·꺼짐(125), 명령 실행 권한 없음(126), 명령 없음(127),
+podman exec 시간 초과, 판정할 수 없는 출력.
 
-출력: {"results": [{"id", "kind", "expect", "observed", "pass"}...]}
+출력: {"results": [{"id", "kind", "expect", "observed", "pass", "evidence"}...]}
 사용: probe.py scenarios/req-001.json > out/probe.json
 """
 
@@ -23,6 +25,7 @@ import argparse
 import ipaddress
 import json
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -159,49 +162,81 @@ class ProbeError(Exception):
     """프로브를 실행하지 못함. 허용/차단을 관측한 것이 아니다."""
 
 
-def observe(tool, res, port=None, to=None, echo=None):
+def judge(tool, res, port=None, to=None, echo=None):
+    """관측 결과 -> (판정, 근거). 판정할 수 없으면 (None, None). 근거는 결과에 evidence 로 남긴다."""
     if tool == "udp":
         if res.returncode != 0:
-            return None
+            return None, None
         r = udp_result(res.stdout)
-        if r in ("reply", "refused"):
-            return "allow"
+        if r == "reply":
+            return "allow", "udp: 에코 응답 받음"
+        if r == "refused":
+            return "allow", "udp: ICMP port unreachable (방화벽 통과, 포트 닫힘)"
         if r == "timeout" and (to, port) in (udp_echo() if echo is None else echo):
-            return "block"
-        return None
+            return "block", "udp: 에코 서비스 응답 없음 (drop)"
+        return None, None
     if tool == "hping3":
         if res.returncode == 0:
-            return "allow" if hping_flags(res.stdout, to, port) in HPING_ALLOW_FLAGS else None
+            flags = hping_flags(res.stdout, to, port)
+            if flags in HPING_ALLOW_FLAGS:
+                return "allow", f"hping3: flags={flags} ({'열림' if flags == 'SA' else '방화벽 통과, 포트 닫힘'})"
+            return None, None
         if res.returncode == 1 and HPING_SENT_NONE in res.stderr and "len=" not in res.stdout:
-            return "block"
-        return None
+            return "block", "hping3: SYN 응답 없음 (drop)"
+        return None, None
     if tool == "nmap":
         if res.returncode != 0:
-            return None
+            return None, None
         st = nmap_state(res.stdout, port)
         if st in NMAP_ALLOW:
-            return "allow"
+            return "allow", f"nmap: {st[0]}/{st[1]}"
         if st in NMAP_BLOCK:
-            return "block"
-        return None
+            return "block", f"nmap: {st[0]}/{st[1]} (drop)"
+        return None, None
     if res.returncode == 0:
-        return "allow"
+        return "allow", {"nc": "nc: 연결됨", "curl": "curl: HTTP 응답 받음", "ping": "ping: 응답 받음"}.get(tool, tool)
     if tool == "curl":
         if CURL_CONNECTED in res.stderr:
-            return "allow"
+            return "allow", f"curl: TCP 연결됨, 이후 종료 코드 {res.returncode}"
         if res.returncode == 7 and CURL_PASSED in res.stderr:
-            return "allow"
+            return "allow", "curl: Connection refused (방화벽 통과, 포트 닫힘)"
         if res.returncode == 28 and CURL_BLOCKED in res.stderr:
-            return "block"
-        return None
+            return "block", "curl: 연결 단계 timeout (drop)"
+        return None, None
     if tool == "nc" and res.returncode == 1:
         if NC_PASSED in res.stderr:
-            return "allow"
+            return "allow", "nc: Connection refused (방화벽 통과, 포트 닫힘)"
         if NC_BLOCKED in res.stderr:
-            return "block"
+            return "block", "nc: timed out (drop)"
     if tool == "ping" and res.returncode == 1:  # ping: 1 응답 없음, 2 오류
-        return "block"
-    return None
+        return "block", "ping: 응답 없음 (drop)"
+    return None, None
+
+
+def observe(tool, res, port=None, to=None, echo=None):
+    """판정만. allow | block | None(실행 실패)"""
+    return judge(tool, res, port, to, echo)[0]
+
+
+# podman exec 자체가 실패한 종료 코드. lab 이미지에서 확인했다.
+#   125: 컨테이너가 없거나 꺼짐 ("no such container", "container state improper")
+#   126: 실행 권한 없음 ("exists but it is not executable")
+#   127: 명령 없음 ("executable file ... not found in $PATH")
+# 126·127 은 마지막 줄이 "read unixpacket ...: connection reset by peer" 라 원인이 가려지므로 "Error:" 줄을 쓴다.
+EXEC_FAILURES = {125: "컨테이너 없음·꺼짐", 126: "명령 실행 권한 없음", 127: "명령 없음"}
+
+
+def failure_reason(tool, res):
+    """판정할 수 없었던 실행의 원인 (분류, 근거 줄)."""
+    lines = [ln.strip() for ln in res.stderr.splitlines() if ln.strip()]
+    errors = [ln for ln in lines if ln.startswith("Error:")]
+    if res.returncode in EXEC_FAILURES:
+        return EXEC_FAILURES[res.returncode], (errors[0] if errors else (lines[-1] if lines else ""))
+    if tool == "udp" and res.returncode == 0:
+        return "판정할 수 없는 출력", res.stdout.strip().splitlines()[-1] if res.stdout.strip() else "출력 없음"
+    if tool == "nmap" and res.returncode == 0:
+        return "판정할 수 없는 출력", "대상 포트의 state/reason 이 없거나 drop 이 아닌 filtered"
+    return "판정할 수 없는 출력", lines[-1] if lines else "출력 없음"
 
 
 def echo_alive(to, port):
@@ -265,22 +300,26 @@ def command(p):
 def run_probe(p):
     tool, cmd = command(p)
     # nmap 은 --host-timeout 이 TIMEOUT_S * 5 초, udp 는 TIMEOUT_S 초씩 UDP_ATTEMPTS 번이라 그보다 길게 기다린다
-    wait = {"nmap": TIMEOUT_S * 5, "udp": TIMEOUT_S * UDP_ATTEMPTS}.get(tool, TIMEOUT_S)
-    res = exec_in(p["from"], *cmd, timeout=wait + 10)
-    observed = observe(tool, res, p.get("port"), p["to"])
+    wait = {"nmap": TIMEOUT_S * 5, "udp": TIMEOUT_S * UDP_ATTEMPTS}.get(tool, TIMEOUT_S) + 10
+    try:
+        res = exec_in(p["from"], *cmd, timeout=wait)
+    except subprocess.TimeoutExpired:
+        raise ProbeError(f"{p['id']}: 프로브 실행 실패 [podman exec 시간 초과] {wait}초 안에 끝나지 않음") from None
+    observed, evidence = judge(tool, res, p.get("port"), p["to"])
     if observed is None:
         if tool == "udp" and res.returncode == 0 and udp_result(res.stdout) == "timeout":
             raise ProbeError(f"{p['id']}: udp 응답 없음. {p['to']}:{p['port']} 는 UDP 에코 서비스가 아니라 "
                              "차단으로 판정할 수 없음 (lab/topology.env 의 udp-echo 포트로 프로브할 것)")
-        lines = (res.stderr.strip() or (res.stdout.strip() if tool == "udp" else "")).splitlines()
-        raise ProbeError(f"{p['id']}: 프로브 실행 실패 (exit {res.returncode}) "
-                         f"{lines[-1] if lines else ''}".rstrip())
-    if tool == "udp" and observed == "block" and not echo_alive(p["to"], p["port"]):
-        raise ProbeError(f"{p['id']}: udp 응답 없음. fw 에서 보내도 {p['to']}:{p['port']} 의 UDP 에코 서비스가 "
-                         "응답하지 않아 차단으로 판정할 수 없음")
+        kind, line = failure_reason(tool, res)
+        raise ProbeError(f"{p['id']}: 프로브 실행 실패 [{kind}] ({tool}, exit {res.returncode}) {line}".rstrip())
+    if tool == "udp" and observed == "block":
+        if not echo_alive(p["to"], p["port"]):
+            raise ProbeError(f"{p['id']}: udp 응답 없음. fw 에서 보내도 {p['to']}:{p['port']} 의 UDP 에코 서비스가 "
+                             "응답하지 않아 차단으로 판정할 수 없음")
+        evidence += ", fw 에서는 에코 응답"
     return {
         "id": p["id"], "kind": p["kind"], "expect": p["expect"],
-        "observed": observed, "pass": observed == p["expect"],
+        "observed": observed, "pass": observed == p["expect"], "evidence": evidence,
     }
 
 

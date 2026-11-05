@@ -290,3 +290,82 @@ class TopologyUdpEchoTest(unittest.TestCase):
     def test_lab_server_runs_udp_echo_on_53(self):
         from common.topology import udp_echo
         self.assertIn(("10.10.30.10", 53), udp_echo())
+
+
+# lab 이미지에서 podman exec 가 실패할 때의 stderr 그대로
+MISSING_CMD = ("Error: crun: executable file `nosuchcmd` not found in $PATH: No such file or directory: "
+               "OCI runtime attempted to invoke a command that was not found\n"
+               "Error: read unixpacket @->/proc/self/fd/13/attach: read: connection reset by peer\n")
+NOT_EXEC = ("Error: crun: the path `/etc/hostname` exists but it is not executable: Operation not permitted: "
+            "OCI permission denied\n"
+            "Error: read unixpacket @->/proc/self/fd/13/attach: read: connection reset by peer\n")
+STOPPED = "Error: can only create exec sessions on running containers: container state improper\n"
+
+
+class EvidenceTest(unittest.TestCase):
+    def test_each_verdict_has_evidence(self):
+        cases = [
+            ("nc", done("", 1, "nc: connect to 10.10.30.10 port 22 (tcp) failed: Connection refused\n"),
+             ("allow", "nc: Connection refused (방화벽 통과, 포트 닫힘)")),
+            ("nc", done("", 1, "nc: connect to 10.10.30.10 port 80 (tcp) timed out: Operation now in progress\n"),
+             ("block", "nc: timed out (drop)")),
+            ("nc", done("", 0, "Connection to 10.10.30.10 80 port [tcp/http] succeeded!\n"), ("allow", "nc: 연결됨")),
+            ("ping", done("", 1), ("block", "ping: 응답 없음 (drop)")),
+            ("udp", done(UDP_REFUSED), ("allow", "udp: ICMP port unreachable (방화벽 통과, 포트 닫힘)")),
+        ]
+        for tool, r, want in cases:
+            with self.subTest(tool=tool, want=want):
+                self.assertEqual(probe.judge(tool, r, 80, "10.10.30.10", echo=ECHO), want)
+
+    def test_nmap_evidence_names_state_and_reason(self):
+        r = done(HEAD + '<host><status state="up" reason="user-set"/><ports><port protocol="tcp" portid="80">'
+                 '<state state="closed" reason="conn-refused" reason_ttl="0"/></port></ports></host>'
+                 + TAIL.format(up=1))
+        self.assertEqual(probe.judge("nmap", r, 80, "10.10.30.10"), ("allow", "nmap: closed/conn-refused"))
+
+    def test_failure_has_no_evidence(self):
+        self.assertEqual(probe.judge("nc", done("", 125, STOPPED), 80, "10.10.30.10"), (None, None))
+
+    def test_observe_still_returns_verdict_only(self):
+        self.assertEqual(probe.observe("ping", done("", 0)), "allow")
+
+
+class FailureReasonTest(unittest.TestCase):
+    def test_podman_exec_failures_are_classified_by_exit_code(self):
+        self.assertEqual(probe.failure_reason("nc", done("", 125, STOPPED)), ("컨테이너 없음·꺼짐", STOPPED.strip()))
+        kind, line = probe.failure_reason("nc", done("", 127, MISSING_CMD))
+        self.assertEqual(kind, "명령 없음")
+        self.assertIn("not found in $PATH", line)  # 마지막 줄(connection reset)이 아니라 원인 줄
+        kind, line = probe.failure_reason("nc", done("", 126, NOT_EXEC))
+        self.assertEqual(kind, "명령 실행 권한 없음")
+        self.assertIn("not executable", line)
+
+    def test_unparsed_output(self):
+        self.assertEqual(probe.failure_reason("ping", done("", 2, "ping: unknown host\n")),
+                         ("판정할 수 없는 출력", "ping: unknown host"))
+        self.assertEqual(probe.failure_reason("udp", done(UDP_UNREACH)),
+                         ("판정할 수 없는 출력", UDP_UNREACH.strip()))
+
+
+class RunProbeMessageTest(unittest.TestCase):
+    P = {"id": "n-001", "kind": "normal", "expect": "allow", "from": "pc", "to": "10.10.30.10", "proto": "tcp",
+         "port": 80}
+
+    def run_with(self, fake):
+        with unittest.mock.patch.object(probe, "exec_in", fake):
+            return probe.run_probe(dict(self.P))
+
+    def test_result_carries_evidence(self):
+        r = self.run_with(lambda *a, **k: done("", 1, "nc: connect to 10.10.30.10 port 80 (tcp) timed out\n"))
+        self.assertEqual((r["observed"], r["pass"], r["evidence"]), ("block", False, "nc: timed out (drop)"))
+
+    def test_missing_command_message_names_cause(self):
+        with self.assertRaisesRegex(probe.ProbeError, r"^n-001: 프로브 실행 실패 \[명령 없음\] \(nc, exit 127\) "
+                                                      r"Error: crun: executable file"):
+            self.run_with(lambda *a, **k: done("", 127, MISSING_CMD))
+
+    def test_exec_timeout_is_failure_not_traceback(self):
+        def slow(*a, **k):
+            raise subprocess.TimeoutExpired(cmd="podman", timeout=12)
+        with self.assertRaisesRegex(probe.ProbeError, r"\[podman exec 시간 초과\] 12초"):
+            self.run_with(slow)

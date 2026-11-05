@@ -95,6 +95,21 @@ class DeadmanTest(unittest.TestCase):
         self.assertEqual(self.state.read_text(), "next run\n")
         self.assertEqual(deadman.recover(), [])
 
+    def test_recover_reports_timer_that_already_fired(self):
+        # 이전 deployer 가 죽고 타이머가 이미 복원한 상태: 표시만 지우고 토큰을 보고한다
+        token = deadman.arm("flush ruleset\nbaseline\n", 1)
+        self.assertTrue(self.wait_for(lambda: not (self.dir / f"snap.{token}").exists()))
+        self.assertEqual(deadman.recover(), [token])
+        self.assertEqual(sorted(p.name for p in self.dir.iterdir()), [])
+        self.assertEqual(deadman.recover(), [])
+
+    def test_recover_fails_while_fired_snapshot_remains(self):
+        self.dir.mkdir()
+        (self.dir / ("fired." + "f" * 32)).write_text("")
+        (self.dir / ("snap." + "f" * 32)).write_text("x")
+        with self.assertRaises(RuntimeError):
+            deadman.recover()
+
     def test_recover_without_leftover(self):
         self.assertEqual(deadman.recover(), [])
         self.assertEqual(self.state.read_text(), "candidate\n")

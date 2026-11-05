@@ -5,7 +5,8 @@ OPNsense savepoint 처럼 방화벽 쪽이 스스로 복원하도록, 적용 전
 
   arm(saved, ttl)  스냅샷을 fw 에 저장하고 "ttl 초 뒤 스냅샷 적용" 프로세스를 띄운다. 토큰을 돌려준다
   disarm(token)    타이머를 해제한다. "disarmed"(해제함) | "fired"(이미 복원됨) | "missing"(흔적 없음)
-  recover()        이전 실행이 남긴 타이머가 있으면 지금 복원하고 해제한다. 복원한 토큰 목록을 돌려준다
+  recover()        이전 실행(deployer 가 죽음)이 남긴 타이머를 처리한다. 아직 대기 중이면 지금 복원하고,
+                   이미 만료돼 복원됐으면 표시만 지운다. 처리한 토큰 목록을 돌려준다
 
 타이머와 해제가 동시에 일어나도 한쪽만 동작하도록, 둘 다 armed.<토큰> 파일을 mv 로 가져간 쪽만 진행한다
 (같은 파일시스템 안의 rename 은 원자적이다). 타이머: armed → fired 로 옮긴 뒤 nft -f. 해제: armed → done.
@@ -62,14 +63,19 @@ def disarm(token):
 
 
 def recover():
-    """armed 로 남은 타이머(이전 deployer 가 죽음)를 지금 가져와 스냅샷을 적용한다.
+    """이전 deployer 가 죽어 남은 타이머를 처리한다.
 
-    그대로 두면 이번 실행 도중에 만료돼 룰셋을 바꾸므로, 시작하기 전에 처리한다.
+    armed: 아직 대기 중. 그대로 두면 이번 실행 도중에 만료돼 룰셋을 바꾸므로 지금 가져와 스냅샷을 적용한다.
+    fired: 이미 만료돼 fw 가 복원했다(스냅샷도 지워짐). 표시만 지운다. 스냅샷이 남아 있으면 복원 중이거나
+           복원에 실패한 것이라 결과를 믿을 수 없으므로 실패로 끝낸다.
     """
     d = _dir()
     out = _sh(f'mkdir -p {d}; for f in {d}/armed.*; do [ -e "$f" ] || continue; t=${{f##*/armed.}};'
               f' mv "$f" {d}/fired.$t 2>/dev/null || continue;'  # 그 사이 타이머가 먼저 가져갔다
-              f' nft -f {d}/snap.$t || exit 1; rm -f {d}/snap.$t {d}/fired.$t; echo $t; done')
+              f' nft -f {d}/snap.$t || exit 1; rm -f {d}/snap.$t {d}/fired.$t; echo $t; done;'
+              f' for f in {d}/fired.*; do [ -e "$f" ] || continue; t=${{f##*/fired.}};'
+              f' if [ -e {d}/snap.$t ]; then echo "타이머 복원이 끝나지 않음: $t" >&2; exit 1; fi;'
+              f' rm -f "$f"; echo $t; done')
     tokens = out.split()
     if any(not TOKEN.match(t) for t in tokens):
         raise RuntimeError(f"데드맨 복구 출력을 알 수 없음: {out!r}")

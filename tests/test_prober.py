@@ -1,6 +1,7 @@
 """prober/probe.py 테스트. 컨테이너 없이 lab 이미지(nmap 7.93)에서 관측한 출력으로 판정만 확인한다."""
 
 import subprocess
+import unittest.mock
 import unittest
 
 from prober import probe
@@ -183,3 +184,109 @@ class HpingCommandTest(unittest.TestCase):
     def test_hping3_on_icmp_is_rejected(self):
         with self.assertRaises(ValueError):
             probe.command(self.probe(proto="icmp"))
+
+
+# lab 이미지(python3 3.11)에서 UDP_SCRIPT 가 낸 출력 그대로
+UDP_REPLY = '{"result": "reply"}\n'
+UDP_REFUSED = '{"result": "refused"}\n'
+UDP_TIMEOUT = '{"result": "timeout"}\n'
+UDP_UNREACH = '{"result": "error", "errno": 101, "error": "[Errno 101] Network is unreachable"}\n'
+ECHO = {("10.10.30.10", 53)}
+
+
+class UdpObserveTest(unittest.TestCase):
+    def observe(self, stdout, returncode=0, stderr="", to="10.10.30.10", port=53):
+        return probe.observe("udp", done(stdout, returncode, stderr), port, to, echo=ECHO)
+
+    def test_echo_reply_is_allow(self):
+        self.assertEqual(self.observe(UDP_REPLY), "allow")
+
+    def test_port_unreachable_is_allow_because_firewall_passed(self):
+        self.assertEqual(self.observe(UDP_REFUSED, port=54), "allow")
+
+    def test_no_reply_from_echo_service_is_block(self):
+        self.assertEqual(self.observe(UDP_TIMEOUT), "block")
+
+    def test_no_reply_from_other_port_is_failure(self):
+        # 닫힌 포트도 ICMP 속도 제한으로 응답이 없을 수 있다 (랩: 10번 중 1번)
+        self.assertIsNone(self.observe(UDP_TIMEOUT, port=54))
+        self.assertIsNone(self.observe(UDP_TIMEOUT, to="10.10.30.99"))
+
+    def test_socket_error_is_failure(self):
+        self.assertIsNone(self.observe(UDP_UNREACH))
+
+    def test_podman_exec_failure_is_failure(self):
+        err = "Error: can only create exec sessions on running containers: container state improper\n"
+        self.assertIsNone(self.observe("", 125, err))
+
+    def test_garbage_output_is_failure(self):
+        for out in ("", "not json\n", UDP_REPLY + UDP_REPLY, "[1]\n", '{"result": "other"}\n'):
+            with self.subTest(out=out):
+                self.assertIsNone(self.observe(out))
+
+
+class UdpCommandTest(unittest.TestCase):
+    def probe(self, **kw):
+        return dict({"id": "n-x", "from": "pc", "to": "10.10.30.10", "proto": "udp", "port": 53}, **kw)
+
+    def test_udp_defaults_to_python_datagram_probe(self):
+        tool, cmd = probe.command(self.probe())
+        self.assertEqual(tool, "udp")
+        self.assertEqual(cmd[:2], ["python3", "-c"])
+        self.assertEqual(cmd[3:], ["10.10.30.10", "53", str(probe.TIMEOUT_S), str(probe.UDP_ATTEMPTS)])
+        compile(cmd[2], "<udp>", "exec")
+
+    def test_target_must_be_ip(self):
+        with self.assertRaisesRegex(ValueError, "^n-x: udp 대상은 IP"):
+            probe.command(self.probe(to="server"))
+
+    def test_port_must_be_single_integer(self):
+        for port in ("53", "53-54", 0, 65536, True, None):
+            with self.subTest(port=port), self.assertRaises(ValueError):
+                probe.command(self.probe(port=port))
+
+
+class UdpRunTest(unittest.TestCase):
+    """run_probe: block 은 fw 에서 에코 서비스가 살아 있는지 확인한 뒤에만 낸다."""
+
+    def run_with(self, outputs):
+        calls = []
+
+        def fake_exec(container, *cmd, timeout=30):
+            calls.append(container)
+            return done(outputs[len(calls) - 1])
+
+        p = {"id": "a-x", "kind": "attack", "expect": "block", "from": "pc", "to": "10.10.30.10",
+             "proto": "udp", "port": 53}
+        with unittest.mock.patch.object(probe, "exec_in", fake_exec), \
+                unittest.mock.patch.object(probe, "udp_echo", return_value=ECHO):
+            return probe.run_probe(p), calls
+
+    def test_block_needs_echo_alive_from_fw(self):
+        result, calls = self.run_with([UDP_TIMEOUT, UDP_REPLY])
+        self.assertEqual((result["observed"], result["pass"]), ("block", True))
+        self.assertEqual(calls, ["pc", probe.FW])
+
+    def test_dead_echo_service_is_failure_not_block(self):
+        with self.assertRaisesRegex(probe.ProbeError, "에코 서비스가 응답하지 않아"):
+            self.run_with([UDP_TIMEOUT, UDP_TIMEOUT])
+
+    def test_allow_does_not_query_fw(self):
+        result, calls = self.run_with([UDP_REPLY])
+        self.assertEqual((result["observed"], calls), ("allow", ["pc"]))
+
+    def test_timeout_on_non_echo_port_names_the_reason(self):
+        def fake_exec(container, *cmd, timeout=30):
+            return done(UDP_TIMEOUT)
+        p = {"id": "a-x", "kind": "attack", "expect": "block", "from": "pc", "to": "10.10.30.10",
+             "proto": "udp", "port": 54}
+        with unittest.mock.patch.object(probe, "exec_in", fake_exec), \
+                unittest.mock.patch.object(probe, "udp_echo", return_value=ECHO), \
+                self.assertRaisesRegex(probe.ProbeError, "UDP 에코 서비스가 아니라"):
+            probe.run_probe(p)
+
+
+class TopologyUdpEchoTest(unittest.TestCase):
+    def test_lab_server_runs_udp_echo_on_53(self):
+        from common.topology import udp_echo
+        self.assertIn(("10.10.30.10", 53), udp_echo())

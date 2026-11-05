@@ -1,0 +1,667 @@
+{
+  "commit": "2c8415458bd8841a693f388c1297f710aa5bfd96",
+  "dirty": false,
+  "args": {
+    "scenarios": "scenarios/req-0[12]*.json",
+    "candidates": "mutations",
+    "reps": 3,
+    "watch": 10,
+    "approve": "no",
+    "allow_dirty": false
+  },
+  "started": "2026-11-05T15:06:16",
+  "finished": "2026-11-05T15:34:16",
+  "runs": [
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-action-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-010-req-010-action-01-r1"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-action-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-010-req-010-action-01-r2"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-action-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-010-req-010-action-01-r3"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-extra-01",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-010-req-010-extra-01-r1"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-extra-01",
+      "rep": 2,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-010-req-010-extra-01-r2"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-extra-01",
+      "rep": 3,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-010-req-010-extra-01-r3"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-order-01",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-010-req-010-order-01-r1"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-order-01",
+      "rep": 2,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-010-req-010-order-01-r2"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-order-01",
+      "rep": 3,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-010-req-010-order-01-r3"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-state-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-010-req-010-state-01-r1"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-state-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-010-req-010-state-01-r2"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "req-010-state-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-010-req-010-state-01-r3"
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-extra-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-011-req-011-extra-01-r1"
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-extra-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-011-req-011-extra-01-r2"
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-extra-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-011-req-011-extra-01-r3"
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-missing-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-011-req-011-missing-01-r1"
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-missing-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-011-req-011-missing-01-r2"
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-missing-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-011-req-011-missing-01-r3"
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-state-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-011-req-011-state-01-r1"
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-state-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-011-req-011-state-01-r2"
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-state-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-011-req-011-state-01-r3"
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-action-01",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-012-req-012-action-01-r1"
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-action-01",
+      "rep": 2,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-012-req-012-action-01-r2"
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-action-01",
+      "rep": 3,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-012-req-012-action-01-r3"
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-order-01",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-012-req-012-order-01-r1"
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-order-01",
+      "rep": 2,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-012-req-012-order-01-r2"
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-order-01",
+      "rep": 3,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-012-req-012-order-01-r3"
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-state-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-012-req-012-state-01-r1"
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-state-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-012-req-012-state-01-r2"
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-state-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-012-req-012-state-01-r3"
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-port-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-013-req-013-port-01-r1"
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-port-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-013-req-013-port-01-r2"
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-port-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-013-req-013-port-01-r3"
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-proto-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-013-req-013-proto-01-r1"
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-proto-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-013-req-013-proto-01-r2"
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-proto-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-013-req-013-proto-01-r3"
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-state-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-013-req-013-state-01-r1"
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-state-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-013-req-013-state-01-r2"
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-state-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-013-req-013-state-01-r3"
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-order-01",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-014-req-014-order-01-r1"
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-order-01",
+      "rep": 2,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-014-req-014-order-01-r2"
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-order-01",
+      "rep": 3,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-014-req-014-order-01-r3"
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-range-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-014-req-014-range-01-r1"
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-range-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-014-req-014-range-01-r2"
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-range-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-014-req-014-range-01-r3"
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-state-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-014-req-014-state-01-r1"
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-state-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-014-req-014-state-01-r2"
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-state-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-014-req-014-state-01-r3"
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-action-01",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-015-req-015-action-01-r1"
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-action-01",
+      "rep": 2,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-015-req-015-action-01-r2"
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-action-01",
+      "rep": 3,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-015-req-015-action-01-r3"
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-proto-01",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-015-req-015-proto-01-r1"
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-proto-01",
+      "rep": 2,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-015-req-015-proto-01-r2"
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-proto-01",
+      "rep": 3,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-015-req-015-proto-01-r3"
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-state-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-015-req-015-state-01-r1"
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-state-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-015-req-015-state-01-r2"
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-state-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-015-req-015-state-01-r3"
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-narrow-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-016-req-016-narrow-01-r1"
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-narrow-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-016-req-016-narrow-01-r2"
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-narrow-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-016-req-016-narrow-01-r3"
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-state-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-016-req-016-state-01-r1"
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-state-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-016-req-016-state-01-r2"
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-state-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-016-req-016-state-01-r3"
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-widen-01",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-016-req-016-widen-01-r1"
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-widen-01",
+      "rep": 2,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-016-req-016-widen-01-r2"
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-widen-01",
+      "rep": 3,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-016-req-016-widen-01-r3"
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-missing-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-017-req-017-missing-01-r1"
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-missing-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-017-req-017-missing-01-r2"
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-missing-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-017-req-017-missing-01-r3"
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-port-any-01",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-017-req-017-port-any-01-r1"
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-port-any-01",
+      "rep": 2,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-017-req-017-port-any-01-r2"
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-port-any-01",
+      "rep": 3,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-017-req-017-port-any-01-r3"
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-state-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-017-req-017-state-01-r1"
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-state-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-017-req-017-state-01-r2"
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-state-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-017-req-017-state-01-r3"
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-state-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-018-req-018-state-01-r1"
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-state-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-018-req-018-state-01-r2"
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-state-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-018-req-018-state-01-r3"
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-swap-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-018-req-018-swap-01-r1"
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-swap-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-018-req-018-swap-01-r2"
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-swap-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-018-req-018-swap-01-r3"
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-widen-01",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-018-req-018-widen-01-r1"
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-widen-01",
+      "rep": 2,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-018-req-018-widen-01-r2"
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-widen-01",
+      "rep": 3,
+      "status": "rejected_approval",
+      "out": "out/batch-20261105-150616/req-018-req-018-widen-01-r3"
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-narrow-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-020-req-020-narrow-01-r1"
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-narrow-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-020-req-020-narrow-01-r2"
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-narrow-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-020-req-020-narrow-01-r3"
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-state-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-020-req-020-state-01-r1"
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-state-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-020-req-020-state-01-r2"
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-state-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-020-req-020-state-01-r3"
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-widen-01",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-020-req-020-widen-01-r1"
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-widen-01",
+      "rep": 2,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-020-req-020-widen-01-r2"
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-widen-01",
+      "rep": 3,
+      "status": "rolled_back",
+      "out": "out/batch-20261105-150616/req-020-req-020-widen-01-r3"
+    }
+  ]
+}

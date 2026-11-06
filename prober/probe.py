@@ -10,12 +10,14 @@ tcpreplay 는 쓰지 않는다: 상태 기반 방화벽에서 handshake 없는 �
 UDP 에코 서비스의 응답 없음, ping 응답 없음)만 block 으로 판정한다.
 그 외 실패(컨테이너 꺼짐, 명령 없음, 주소 오류, 경로 없음 등)는 실행 실패로 보고
 결과를 내지 않고 종료 코드 1 로 끝낸다. 실험 결과에 섞이지 않게 하기 위함.
+block 은 fw 에서 대상이 살아 있는지 확인한 뒤에만 낸다(tcp·icmp 는 target_alive, udp 는 echo_alive).
+대상 컨테이너가 꺼져 있어도 프로브는 drop 과 똑같이 응답 없음으로 보이기 때문이다.
 종료 코드·메시지는 lab/Containerfile 이미지(debian bookworm netcat-openbsd, iputils-ping, curl 7.88,
 nmap 7.93, hping3 3.0.0-alpha-2, python3 3.11)에서 확인했다.
 
 결과마다 판정 근거(evidence, 예: "nc: Connection refused (방화벽 통과, 포트 닫힘)")를 남긴다.
 실행 실패 메시지는 원인을 분류한다: 컨테이너 없음·꺼짐(125), 명령 실행 권한 없음(126), 명령 없음(127),
-podman exec 시간 초과, 판정할 수 없는 출력.
+podman exec 시간 초과, 판정할 수 없는 출력, 대상 응답 없음.
 
 출력: {"results": [{"id", "kind", "expect", "observed", "pass", "evidence"}...]}
 사용: probe.py scenarios/req-001.json > out/probe.json
@@ -246,6 +248,24 @@ def echo_alive(to, port):
     return res.returncode == 0 and udp_result(res.stdout) == "reply"
 
 
+# tcp·icmp 의 block 은 fw 에서 대상에 TCP 로 직접 연결해 응답(연결됨 또는 RST)이 오는지 확인한 뒤에만 낸다.
+#   fw 자신이 보내는 패킷은 forward 체인(후보 룰)을 지나지 않는다. 랩에서 server 를 멈췄을 때
+#   pc 의 nc 는 drop 과 같은 "timed out" 이었고 fw 의 nc 도 timed out 이었다(살아 있으면 연결됨·Connection refused).
+#   응답이 없으면 대상이 꺼졌거나 죽은 것이라 차단으로 기록하지 않는다. require_lab 없이 probe.py 만 돌릴 때도 막기 위함
+# icmp 도 TCP 로 확인한다: fw 컨테이너에는 NET_RAW 가 없어 ping 이 "Operation not permitted" 로 실패한다.
+#   호스트가 살아 있으면 닫힌 포트(ALIVE_PORT)에도 커널이 RST 로 응답한다
+ALIVE_PORT = 1
+
+
+def target_alive(to, port=None):
+    """fw 에서 대상에 TCP 로 직접 연결해 응답을 받는가. (살아 있음, 근거)"""
+    port = ALIVE_PORT if port is None else port
+    res = exec_in(FW, "nc", "-vz", "-w", str(TIMEOUT_S), to, str(port), timeout=TIMEOUT_S + 10)
+    if observe("nc", res) != "allow":
+        return False, None
+    return True, f"fw 에서는 {port}/tcp {'연결됨' if res.returncode == 0 else 'RST 응답'}"
+
+
 def check_udp_target(p):
     """UDP 프로브는 IP 와 단일 포트만 받는다 (이름 해석 실패가 timeout 으로 보이지 않게). 어기면 ValueError."""
     try:
@@ -317,6 +337,13 @@ def run_probe(p):
             raise ProbeError(f"{p['id']}: udp 응답 없음. fw 에서 보내도 {p['to']}:{p['port']} 의 UDP 에코 서비스가 "
                              "응답하지 않아 차단으로 판정할 수 없음")
         evidence += ", fw 에서는 에코 응답"
+    elif observed == "block":
+        alive, how = target_alive(p["to"], p.get("port"))
+        if not alive:
+            target = p["to"] if p.get("port") is None else f"{p['to']}:{p['port']}"
+            raise ProbeError(f"{p['id']}: 프로브 실행 실패 [대상 응답 없음] ({tool}) fw 에서도 {target} 가 TCP 에 "
+                             "응답하지 않아 차단으로 판정할 수 없음 (대상 컨테이너가 꺼졌는지 확인할 것)")
+        evidence += f", {how}"
     return {
         "id": p["id"], "kind": p["kind"], "expect": p["expect"],
         "observed": observed, "pass": observed == p["expect"], "evidence": evidence,

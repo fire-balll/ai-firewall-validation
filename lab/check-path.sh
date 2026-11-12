@@ -56,5 +56,26 @@ else
   fail=1
 fi
 
+echo "[5] fw 에서 각 호스트로 직접 TCP 응답 (프로브가 block 전에 쓰는 확인, #62·#64)"
+# fw 자신이 보내는 패킷은 forward 체인을 지나지 않으므로 후보 룰과 상관없이 닿아야 한다.
+# 닿지 않으면 호스트(VM) 쪽에서 실험실 브리지 트래픽을 걸러내는 것이다(예: br_netfilter 를 켜는 k3s·docker).
+# 이 상태로 배치를 돌리면 block 판정이 모두 실행 실패가 된다. 닫힌 포트 1 의 RST 도 응답으로 친다
+source "$(dirname "$0")/topology.env"
+dead=()
+while IFS= read -r line; do
+  [[ -z "$line" ]] && continue
+  IFS=: read -r host net num _ <<<"$line"
+  prefix=""
+  for n in $NETWORKS; do [[ ${n%%:*} == "$net" ]] && prefix=${n#*:}; done
+  out=$($PODMAN exec fw nc -vz -w 2 "$prefix.$num" 1 2>&1)
+  [[ "$out" == *succeeded* || "$out" == *refused* ]] || dead+=("$host($prefix.$num)")
+done <<<"$HOSTS"
+if [[ ${#dead[@]} -eq 0 ]]; then
+  echo "  OK: 모든 호스트가 fw 에 직접 응답함"
+else
+  echo "  FAIL: fw 에서 응답 없음: ${dead[*]}. 호스트의 br_netfilter·방화벽 규칙을 확인할 것 (sysctl net.bridge.bridge-nf-call-iptables)"
+  fail=1
+fi
+
 reset_fw ""
 exit $fail

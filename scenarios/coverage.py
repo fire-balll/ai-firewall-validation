@@ -59,8 +59,7 @@ def probe_ports(rules):
 def lab_probes(host_ips, ports, udp=()):
     """랩에서 보낼 수 있는 모든 프로브. 같은 서브넷 안은 fw 를 거치지 않으므로 뺀다.
 
-    udp 는 UDP 에코 서비스 (IP, 포트) 목록이다. 비어 있으면 UDP 프로브를 만들지 않는다
-    (eval/detection.py 는 아직 UDP 를 넣지 않는다, #62).
+    udp 는 UDP 에코 서비스 (IP, 포트) 목록이다. 비어 있으면 UDP 프로브를 만들지 않는다.
     """
     def net(ip):
         return ipaddress.ip_network(f"{ip}/24", strict=False)

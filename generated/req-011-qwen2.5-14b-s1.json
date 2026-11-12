@@ -1,0 +1,35 @@
+{
+  "scenario": "req-011",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "내부망(LAN)의 기기가 서버 망의 업데이트 포트(8080)를 사용할 수 있다.",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 1
+    },
+    {
+      "id": "r-002",
+      "intent": "IoT 망의 기기가 서버 망의 업데이트 포트(8080)를 사용할 수 있다.",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 2
+    },
+    {
+      "id": "r-003",
+      "intent": "게스트 망의 기기는 서버 망에 접속할 수 없다.",
+      "src": "10.10.40.0/24",
+      "dst": "10.10.30.0/24",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 3
+    }
+  ]
+}

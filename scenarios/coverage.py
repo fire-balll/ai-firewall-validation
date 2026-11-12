@@ -9,6 +9,9 @@
 후보 포트는 정답 룰의 포트와 범위 경계(lo-1, lo, hi, hi+1), 80, 8080, 그리고 어느 룰에도
 없는 포트 하나(OTHER_PORT)다.
 
+UDP 는 응답 없음을 차단으로 볼 수 있는 곳이 UDP 에코 서비스뿐이다(#62). 다른 포트는 차단이면
+prober 가 실행 실패로 끝나므로, UDP 프로브는 에코 서비스(common.topology.udp_echo)로만 보낸다.
+
 드러나지 않은 변형은 셋으로 나눈다.
   equivalent  오류가 아니다. 어떤 패킷에도 정답과 같다. 순서를 바꾼 두 룰이 겹치지 않거나 action 이 같은 경우는
               바로 알 수 있고, 나머지는 랩 프로브로 차이가 안 날 때 validator/compare.py 의 전체 비교로 확인한다
@@ -36,7 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.ir import ROOT, load_json  # noqa: E402
 from common.sim import decide  # noqa: E402
 from validator.compare import compare_offline  # noqa: E402
-from common.topology import hosts  # noqa: E402
+from common.topology import hosts, udp_echo  # noqa: E402
 
 BASE_PORTS = (80, 8080)
 OTHER_PORT = 9999  # 어느 정답 룰에도 없는 포트. 포트를 any 로 넓힌 오류를 드러낸다
@@ -53,8 +56,12 @@ def probe_ports(rules):
     return sorted(p for p in ports if 0 < p < 65536)
 
 
-def lab_probes(host_ips, ports):
-    """랩에서 보낼 수 있는 모든 프로브. 같은 서브넷 안은 fw 를 거치지 않으므로 뺀다."""
+def lab_probes(host_ips, ports, udp=()):
+    """랩에서 보낼 수 있는 모든 프로브. 같은 서브넷 안은 fw 를 거치지 않으므로 뺀다.
+
+    udp 는 UDP 에코 서비스 (IP, 포트) 목록이다. 비어 있으면 UDP 프로브를 만들지 않는다
+    (eval/detection.py 는 아직 UDP 를 넣지 않는다, #62).
+    """
     def net(ip):
         return ipaddress.ip_network(f"{ip}/24", strict=False)
 
@@ -65,6 +72,8 @@ def lab_probes(host_ips, ports):
                 continue
             out.append({"from": src_name, "to": dst, "proto": "icmp"})
             out += [{"from": src_name, "to": dst, "proto": "tcp", "port": p} for p in ports]
+        out += [{"from": src_name, "to": ip, "proto": "udp", "port": p}
+                for ip, p in sorted(udp) if net(src) != net(ip)]
     return out
 
 
@@ -144,7 +153,7 @@ def policy_changed(gold, mutant):
 def analyze(scenario, host_ips):
     gold = scenario["gold"]["rules"]
     probes = scenario["probes"]
-    universe = lab_probes(host_ips, probe_ports(gold))
+    universe = lab_probes(host_ips, probe_ports(gold), udp_echo())
     gold_s, gold_u = verdicts(gold, probes, host_ips), verdicts(gold, universe, host_ips)
 
     caught, equivalent, uncovered, missed = 0, [], {}, []

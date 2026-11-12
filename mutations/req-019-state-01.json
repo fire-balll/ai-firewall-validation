@@ -1,0 +1,35 @@
+{
+  "scenario": "req-019",
+  "rules": [
+    {
+      "id": "g-001",
+      "intent": "IoT 기기는 서버의 DNS(53/udp)만 쓸 수 있다",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "udp",
+      "dport": "53",
+      "action": "accept",
+      "priority": 100
+    },
+    {
+      "id": "g-002",
+      "intent": "PC 망은 서버의 DNS(53/udp)를 쓸 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "udp",
+      "dport": "53",
+      "action": "accept",
+      "priority": 110
+    },
+    {
+      "id": "g-003",
+      "intent": "PC 망은 서버의 웹(80)을 쓸 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 120
+    }
+  ]
+}

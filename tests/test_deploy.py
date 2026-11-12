@@ -68,6 +68,15 @@ class DeployFlowTest(unittest.TestCase):
         self.assertIn("데드맨", out["error"])
         self.assertEqual(applied, ["CANDIDATE", "SAVED"])
 
+    def test_aborted_after_rollback_clears_timings(self):
+        # 롤백한 뒤 타이머가 이미 만료돼 있었으면 실행 실패다. 복구 시간이 결과처럼 남지 않아야 한다 (#54 리뷰)
+        code, out, _, _ = self.run_deploy([FAIL], disarm="fired")
+        self.assertEqual(code, 1)
+        self.assertTrue(out["aborted"])
+        self.assertTrue(out["rolled_back"])
+        self.assertIsNone(out["detect_s"])
+        self.assertIsNone(out["mttr_s"])
+
     def test_apply_failure_disarms_and_aborts(self):
         code, out, calls, _ = self.run_deploy([], apply_error="nft -f 실패")
         self.assertEqual(code, 1)

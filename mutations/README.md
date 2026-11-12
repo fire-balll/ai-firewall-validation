@@ -49,7 +49,7 @@ IR 에는 상태 추적 룰을 끌 필드가 없어서, state 후보는 **IR 이
 
 ## 파일 목록
 
-원본은 모두 `scenarios/<시나리오>.json` 의 gold 다. req-011 ~ 021(req-019 제외)은 4주차에 추가했다. 위 유형 표의 "적용할 시나리오" 열은 req-001 ~ 010 기준이다. "정적"은 현재 `validator/validate.py` 의 risk(모두 ok=true), "실패 프로브"는 `common/sim.py` 시뮬레이터로 시나리오 프로브를 돌렸을 때 정답과 판정이 달라지는 프로브다. 랩 실측이 아니다. state 유형은 시뮬레이터로 드러나지 않으므로 랩 결과(Mac, rootless Podman. req-001 ~ 010 은 #23, req-011 ~ 020 은 #51, req-021 은 이 파일을 추가한 PR)를 괄호로 적었다.
+원본은 모두 `scenarios/<시나리오>.json` 의 gold 다. req-011 ~ 021 은 4주차에, req-019 는 UDP 프로브(#62) 머지 뒤에 추가했다. 위 유형 표의 "적용할 시나리오" 열은 req-001 ~ 010 기준이다. "정적"은 현재 `validator/validate.py` 의 risk(모두 ok=true), "실패 프로브"는 `common/sim.py` 시뮬레이터로 시나리오 프로브를 돌렸을 때 정답과 판정이 달라지는 프로브다. 랩 실측이 아니다. state 유형은 시뮬레이터로 드러나지 않으므로 랩 결과(Mac, rootless Podman. req-001 ~ 010 은 #23, req-011 ~ 020 은 #51, req-019·021 은 각 파일을 추가한 PR)를 괄호로 적었다.
 
 | 파일 | 원본 | 유형 | 바꾼 내용 | 정적 | 실패 프로브 (시뮬레이터) |
 | --- | --- | --- | --- | --- | --- |
@@ -103,6 +103,10 @@ IR 에는 상태 추적 룰을 끌 필드가 없어서, state 후보는 **IR 이
 | req-018-state-01.json | req-018 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
 | req-018-swap-01.json | req-018 | swap | g-003 의 src 와 dst 를 맞바꿈 (IoT → PC 9000 이 PC → IoT 9000 으로) | low | n-002 |
 | req-018-widen-01.json | req-018 | widen | g-002(IoT → 서버 8080) 의 src 10.10.10.0/24 → any | high | a-008 |
+| req-019-port-01.json | req-019 | port | g-001(IoT → 서버 DNS) 의 dport 53 → 5353 | low | n-001 |
+| req-019-proto-01.json | req-019 | proto | g-001(IoT → 서버 DNS) 의 proto udp → any (dport any) | high | a-002~a-004 |
+| req-019-state-01.json | req-019 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
+| req-019-widen-01.json | req-019 | widen | g-002(PC 망 → 서버 DNS) 의 src 10.10.20.0/24 → 10.10.0.0/16. 게스트 망도 DNS 를 쓰게 됨 | low | a-001 (UDP 차단 프로브) |
 | req-020-narrow-01.json | req-020 | narrow | g-002(PC 망 → 서버 80) 의 src 10.10.20.0/24 → 10.10.20.10/32 | low | n-002 |
 | req-020-state-01.json | req-020 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-003) |
 | req-020-widen-01.json | req-020 | widen | g-001(관리자 PC → 서버 8080) 의 src 10.10.20.10/32 → 10.10.20.0/24 | low | a-001 |

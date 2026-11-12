@@ -6,8 +6,8 @@ import unittest
 
 from common.ir import ROOT, load_json, schema_errors
 from common.sim import simulate
-from common.topology import hosts
-from scenarios.coverage import analyze, overlaps
+from common.topology import hosts, udp_echo
+from scenarios.coverage import analyze, lab_probes, overlaps
 
 SCENARIOS = sorted(glob.glob(str(ROOT / "scenarios" / "req-*.json")))
 
@@ -75,6 +75,24 @@ class ScenarioTest(unittest.TestCase):
         result = analyze(s, self.host_ips)
         self.assertIn("action:g-001", result["missed"])
         self.assertNotIn("action:g-001", result["equivalent"])
+
+    def test_udp_probes_only_to_echo_service(self):
+        # #62: UDP 응답 없음을 차단으로 볼 수 있는 곳은 에코 서비스뿐이다
+        echo = {("10.10.30.10", 53)}
+        udp = [p for p in lab_probes(self.host_ips, [80], echo) if p["proto"] == "udp"]
+        self.assertTrue(udp)
+        self.assertEqual({(p["to"], p["port"]) for p in udp}, echo)
+        self.assertNotIn("server", {p["from"] for p in udp})
+        self.assertEqual([p for p in lab_probes(self.host_ips, [80]) if p["proto"] == "udp"], [])
+
+    def test_udp_block_probes_target_echo_service(self):
+        # 차단을 기대하는 UDP 프로브가 다른 포트로 가면 prober 가 실행 실패로 끝난다 (#62)
+        echo = {f"{ip}:{port}" for ip, port in udp_echo()}
+        for s in self.each():
+            with self.subTest(scenario=s["id"]):
+                for p in s["probes"]:
+                    if p["proto"] == "udp" and p["expect"] == "block":
+                        self.assertIn(f"{p['to']}:{p['port']}", echo, p["id"])
 
 
 def rule(src, dst, proto, dport, action="accept"):

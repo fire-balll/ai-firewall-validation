@@ -1,0 +1,56 @@
+{
+  "id": "req-019",
+  "description": "UDP 시나리오. 서버의 UDP 에코 서비스(53/udp)를 DNS 로 본다. 차단을 기대하는 UDP 프로브는 모두 에코 서비스(10.10.30.10:53)로 보낸다. 다른 포트는 응답 없음을 차단으로 판정할 수 없다 (#32, #62). proto(udp → any)·port·widen 오류용.",
+  "requirements": [
+    "IoT 기기는 서버의 DNS(53/udp)만 쓸 수 있다",
+    "PC 망은 서버의 DNS(53/udp)와 웹(80)을 쓸 수 있다",
+    "게스트 망은 서버에 접속할 수 없다"
+  ],
+  "gold": {
+    "scenario": "req-019",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "IoT 기기는 서버의 DNS(53/udp)만 쓸 수 있다",
+        "src": "10.10.10.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "udp",
+        "dport": "53",
+        "action": "accept",
+        "priority": 100
+      },
+      {
+        "id": "g-002",
+        "intent": "PC 망은 서버의 DNS(53/udp)를 쓸 수 있다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "udp",
+        "dport": "53",
+        "action": "accept",
+        "priority": 110
+      },
+      {
+        "id": "g-003",
+        "intent": "PC 망은 서버의 웹(80)을 쓸 수 있다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "80",
+        "action": "accept",
+        "priority": 120
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "udp", "port": 53, "expect": "allow" },
+    { "id": "n-002", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "udp", "port": 53, "expect": "allow" },
+    { "id": "n-003", "kind": "normal", "from": "pc2", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "guest", "to": "10.10.30.10", "proto": "udp", "port": 53, "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 53, "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-004", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "icmp", "expect": "block" },
+    { "id": "a-005", "kind": "attack", "from": "guest", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-006", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 53, "expect": "block" },
+    { "id": "a-007", "kind": "attack", "from": "pc", "to": "10.10.10.10", "proto": "tcp", "port": 80, "expect": "block" }
+  ]
+}

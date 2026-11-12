@@ -1,0 +1,984 @@
+{
+  "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752",
+  "dirty": false,
+  "args": {
+    "scenarios": "scenarios/req-01[1-9].json",
+    "candidates": "generated",
+    "reps": 1,
+    "watch": 10,
+    "approve": "no",
+    "allow_dirty": false
+  },
+  "started": "2026-11-12T16:24:24",
+  "finished": "2026-11-12T16:31:42",
+  "runs": [
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-011-req-011-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-011",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:06:20+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 734,
+            "eval_count": 349,
+            "total_duration_ns": 41103276208,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-011-req-011-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-011",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:06:48+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 734,
+            "eval_count": 352,
+            "total_duration_ns": 28404126083,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "req-011-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-011-req-011-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-011",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:07:17+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 734,
+            "eval_count": 356,
+            "total_duration_ns": 28459082750,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-012-req-012-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-012",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:07:35+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 733,
+            "eval_count": 218,
+            "total_duration_ns": 18152014750,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-012-req-012-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-012",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:07:54+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 733,
+            "eval_count": 232,
+            "total_duration_ns": 19021679208,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "req-012-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-012-req-012-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-012",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:08:12+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 733,
+            "eval_count": 220,
+            "total_duration_ns": 17688780750,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-013-req-013-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-013",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:08:38+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 719,
+            "eval_count": 306,
+            "total_duration_ns": 25758135958,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-013-req-013-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-013",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:09:03+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 719,
+            "eval_count": 305,
+            "total_duration_ns": 24530464000,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "req-013-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-013-req-013-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-013",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:09:28+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 719,
+            "eval_count": 315,
+            "total_duration_ns": 25143552958,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-014-req-014-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-014",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:10:18+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 736,
+            "eval_count": 250,
+            "total_duration_ns": 20474795709,
+            "problems": [
+              "rules/0/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1080,
+            "eval_count": 358,
+            "total_duration_ns": 29966544125,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-014-req-014-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-014",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:11:12+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 736,
+            "eval_count": 254,
+            "total_duration_ns": 20399734417,
+            "problems": [
+              "rules/0/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1084,
+            "eval_count": 401,
+            "total_duration_ns": 33114185375,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "req-014-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-014-req-014-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-014",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:12:08+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 736,
+            "eval_count": 267,
+            "total_duration_ns": 21411390625,
+            "problems": [
+              "rules/0/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1097,
+            "eval_count": 408,
+            "total_duration_ns": 33932998708,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261112-162424/req-015-req-015-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-015",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:12:49+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 747,
+            "eval_count": 495,
+            "total_duration_ns": 40897222916,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261112-162424/req-015-req-015-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-015",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:13:23+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 747,
+            "eval_count": 419,
+            "total_duration_ns": 33887677250,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261112-162424/req-015-req-015-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-015",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:14:05+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 747,
+            "eval_count": 528,
+            "total_duration_ns": 42394498166,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261112-162424/req-016-req-016-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-016",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:15:12+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 774,
+            "eval_count": 409,
+            "total_duration_ns": 33926765583,
+            "problems": [
+              "rules/3/dst: '10.10.20.0/24,10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "r-004.dst: '10.10.20.0/24,10.10.30.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1346,
+            "eval_count": 382,
+            "total_duration_ns": 32931122333,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-016-req-016-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-016",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:16:33+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 774,
+            "eval_count": 385,
+            "total_duration_ns": 31088893500,
+            "problems": [
+              "rules/1/dst: '10.10.20.0/24, 10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/2/dst: '10.10.20.0/24, 10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "r-002.dst: '10.10.20.0/24, 10.10.30.0/24' does not appear to be an IPv4 or IPv6 network",
+              "r-003.dst: '10.10.20.0/24, 10.10.30.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1452,
+            "eval_count": 574,
+            "total_duration_ns": 49401034791,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261112-162424/req-016-req-016-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-016",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:17:35+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 774,
+            "eval_count": 334,
+            "total_duration_ns": 26901478750,
+            "problems": [
+              "rules/0/dst: '10.10.20.0/24,10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/2/dst: '10.10.20.0/24,10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "r-001.dst: '10.10.20.0/24,10.10.30.0/24' does not appear to be an IPv4 or IPv6 network",
+              "r-003.dst: '10.10.20.0/24,10.10.30.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1397,
+            "eval_count": 391,
+            "total_duration_ns": 34675631500,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261112-162424/req-017-req-017-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-017",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:19:35+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 876,
+            "eval_count": 728,
+            "total_duration_ns": 60784243458,
+            "problems": [
+              "rules/1/src: '10.10.20.0/24, 10.10.10.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/3/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'",
+              "r-002.src: '10.10.20.0/24, 10.10.10.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1824,
+            "eval_count": 703,
+            "total_duration_ns": 59895575792,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261112-162424/req-017-req-017-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-017",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:21:38+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 876,
+            "eval_count": 749,
+            "total_duration_ns": 60395441209,
+            "problems": [
+              "rules/1/src: '10.10.20.0/24, 10.10.10.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/3/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'",
+              "r-002.src: '10.10.20.0/24, 10.10.10.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1845,
+            "eval_count": 724,
+            "total_duration_ns": 61989709417,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261112-162424/req-017-req-017-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-017",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:23:52+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 876,
+            "eval_count": 755,
+            "total_duration_ns": 61882438792,
+            "problems": [
+              "rules/1/src: '10.10.20.0/24, 10.10.10.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/3/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'",
+              "r-002.src: '10.10.20.0/24, 10.10.10.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1851,
+            "eval_count": 843,
+            "total_duration_ns": 72286326875,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-018-req-018-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-018",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:24:41+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 807,
+            "eval_count": 579,
+            "total_duration_ns": 48079556250,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-018-req-018-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-018",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:25:59+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 807,
+            "eval_count": 479,
+            "total_duration_ns": 39002926291,
+            "problems": [
+              "rules/0/dst: '10.10.30.0/24,10.10.20.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "r-001.dst: '10.10.30.0/24,10.10.20.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1449,
+            "eval_count": 453,
+            "total_duration_ns": 38911767584,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261112-162424/req-018-req-018-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-018",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:26:47+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 807,
+            "eval_count": 589,
+            "total_duration_ns": 47853266000,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-019",
+      "candidate": "req-019-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-019-req-019-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-019",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:27:21+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 745,
+            "eval_count": 407,
+            "total_duration_ns": 33861802584,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-019",
+      "candidate": "req-019-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-019-req-019-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-019",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:27:56+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 745,
+            "eval_count": 434,
+            "total_duration_ns": 35322707209,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-019",
+      "candidate": "req-019-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-162424/req-019-req-019-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-019",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:28:32+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 745,
+            "eval_count": 440,
+            "total_duration_ns": 35357693333,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    }
+  ]
+}

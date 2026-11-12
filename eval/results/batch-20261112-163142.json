@@ -1,0 +1,208 @@
+{
+  "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752",
+  "dirty": false,
+  "args": {
+    "scenarios": "scenarios/req-02[01].json",
+    "candidates": "generated",
+    "reps": 1,
+    "watch": 10,
+    "approve": "no",
+    "allow_dirty": false
+  },
+  "started": "2026-11-12T16:31:42",
+  "finished": "2026-11-12T16:34:05",
+  "runs": [
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-163142/req-020-req-020-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-020",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:28:58+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 763,
+            "eval_count": 317,
+            "total_duration_ns": 26217001583,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-163142/req-020-req-020-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-020",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:29:27+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 763,
+            "eval_count": 356,
+            "total_duration_ns": 28811903209,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "req-020-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-163142/req-020-req-020-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-020",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:29:56+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 763,
+            "eval_count": 354,
+            "total_duration_ns": 28338627208,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-021",
+      "candidate": "req-021-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-163142/req-021-req-021-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-021",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:30:39+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 829,
+            "eval_count": 515,
+            "total_duration_ns": 43305482792,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-021",
+      "candidate": "req-021-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-163142/req-021-req-021-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-021",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:31:20+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 829,
+            "eval_count": 507,
+            "total_duration_ns": 40839498125,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-021",
+      "candidate": "req-021-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261112-163142/req-021-req-021-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-021",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:32:03+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 829,
+            "eval_count": 516,
+            "total_duration_ns": 42739663708,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    }
+  ]
+}

@@ -13,8 +13,9 @@
 랩에서 관측할 수 없는 오류는 분모에서 뺀다 (AGENTS.md, scenarios/coverage.py #13).
 오류 주입 파일마다 실행 전에 정한다:
   equivalent    어떤 패킷에도 정답과 같은 정책 (validator/compare.py 의 전체 비교로 차이 0)
-  unobservable  정답과 다르지만, 랩 호스트 사이의 tcp·icmp 프로브로는 차이가 안 난다
-                (coverage.py 의 lab_probes, 판정은 common/sim.py). 지금 prober 는 udp 를 보내지 않는다
+  unobservable  정답과 다르지만, 랩 호스트 사이의 tcp·icmp 프로브와 UDP 에코 서비스로 가는 udp 프로브로는
+                차이가 안 난다 (coverage.py 의 lab_probes, 판정은 common/sim.py). 에코 서비스가 아닌 udp 포트는
+                차단이면 prober 가 실행 실패로 끝나 관측할 수 없다 (#62)
   observable    랩 프로브로 차이가 난다. 시나리오에 그 프로브가 없어 놓친 것(uncovered)도 여기 들어간다
 state 유형(파일명으로 상태 추적 룰을 뺌)은 IR 이 정답과 같아 시뮬레이터로는 같게 나오지만, 정상 프로브가
 실패하는 것이 랩에서 확인됐다(#23). 그래서 observable 로 두고, state 를 뺀 비율도 따로 낸다.
@@ -39,7 +40,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from common.ir import ROOT, load_json, stateful_for  # noqa: E402
-from common.topology import hosts  # noqa: E402
+from common.topology import hosts, udp_echo  # noqa: E402
 from scenarios.coverage import lab_probes, probe_ports, verdicts  # noqa: E402
 from validator.compare import ComparisonUnavailable, compare_offline  # noqa: E402
 
@@ -66,7 +67,7 @@ def observability(gold, mutant, path, host_ips):
     """오류 주입 파일 하나를 equivalent·unobservable·observable 로 나눈다."""
     if not stateful_for(path):
         return "observable"  # state 유형: IR 은 정답과 같지만 랩에서 정상 프로브가 실패한다 (#23)
-    universe = lab_probes(host_ips, probe_ports(gold["rules"] + mutant["rules"]))
+    universe = lab_probes(host_ips, probe_ports(gold["rules"] + mutant["rules"]), udp_echo())
     if verdicts(gold["rules"], universe, host_ips) != verdicts(mutant["rules"], universe, host_ips):
         return "observable"
     try:

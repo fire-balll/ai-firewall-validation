@@ -28,10 +28,13 @@ PORT = mutant(**{"g-001": {"dport": "8080"}})  # 정상 프로브 n-001 이 실�
 WIDE = mutant(**{"g-001": {"src": "any"}})
 # 두 룰은 목적지가 겹치지 않으므로 순서를 바꿔도 같은 정책이다
 SWAPPED = mutant(**{"g-001": {"priority": 110}, "g-002": {"priority": 100}})
-# udp 만 바뀐 오류. 지금 prober 는 udp 를 보내지 않아 랩에서는 정답과 같게 보인다
+# udp 만 바뀐 오류. 에코 서비스가 아닌 포트(5353)라 차단이면 prober 가 실행 실패로 끝나, 랩에서는 정답과 같게 보인다
 UDP_ONLY = copy.deepcopy(GOLD)
 UDP_ONLY["rules"].append({"id": "x-001", "intent": "추가", "src": "10.10.20.0/24", "dst": "10.10.30.10/32",
-                          "proto": "udp", "dport": "53", "action": "accept", "priority": 200})
+                          "proto": "udp", "dport": "5353", "action": "accept", "priority": 200})
+# 같은 오류지만 UDP 에코 서비스(server 53/udp)로 가는 것. udp 프로브로 차이가 난다 (#62)
+UDP_ECHO = copy.deepcopy(UDP_ONLY)
+UDP_ECHO["rules"][-1]["dport"] = "53"
 
 
 class Base(unittest.TestCase):
@@ -76,6 +79,9 @@ class ObservabilityTest(unittest.TestCase):
 
     def test_udp_only_difference_is_unobservable(self):
         self.assertEqual(self.classify(UDP_ONLY, "req-001-extra-01.json"), "unobservable")
+
+    def test_udp_difference_at_echo_service_is_observable(self):
+        self.assertEqual(self.classify(UDP_ECHO, "req-001-extra-01.json"), "observable")
 
     def test_state_type_is_observable_although_ir_is_gold(self):
         self.assertEqual(self.classify(copy.deepcopy(GOLD), "req-001-state-01.json"), "observable")

@@ -356,8 +356,13 @@ class RunProbeMessageTest(unittest.TestCase):
             return probe.run_probe(dict(self.P))
 
     def test_result_carries_evidence(self):
-        r = self.run_with(lambda *a, **k: done("", 1, "nc: connect to 10.10.30.10 port 80 (tcp) timed out\n"))
-        self.assertEqual((r["observed"], r["pass"], r["evidence"]), ("block", False, "nc: timed out (drop)"))
+        def fake(container, *cmd, timeout=30):
+            if container == probe.FW:
+                return done("", 0, "Connection to 10.10.30.10 80 port [tcp/*] succeeded!\n")
+            return done("", 1, "nc: connect to 10.10.30.10 port 80 (tcp) timed out\n")
+        r = self.run_with(fake)
+        self.assertEqual((r["observed"], r["pass"], r["evidence"]),
+                         ("block", False, "nc: timed out (drop), fw 에서는 80/tcp 연결됨"))
 
     def test_missing_command_message_names_cause(self):
         with self.assertRaisesRegex(probe.ProbeError, r"^n-001: 프로브 실행 실패 \[명령 없음\] \(nc, exit 127\) "
@@ -369,3 +374,61 @@ class RunProbeMessageTest(unittest.TestCase):
             raise subprocess.TimeoutExpired(cmd="podman", timeout=12)
         with self.assertRaisesRegex(probe.ProbeError, r"\[podman exec 시간 초과\] 12초"):
             self.run_with(slow)
+
+
+NC_TIMEOUT = done("", 1, "nc: connect to 10.10.30.10 port 80 (tcp) timed out: Operation now in progress\n")
+NC_REFUSED = done("", 1, "nc: connect to 10.10.30.10 port 1 (tcp) failed: Connection refused\n")
+
+
+class TargetAliveRunTest(unittest.TestCase):
+    """run_probe: tcp·icmp 의 block 은 fw 에서 대상이 TCP 에 응답하는지 확인한 뒤에만 낸다 (랩에서 server 를 멈춰 확인)."""
+
+    def run_with(self, p, probe_res, fw_res):
+        calls = []
+
+        def fake_exec(container, *cmd, timeout=30):
+            calls.append((container, cmd))
+            return fw_res if container == probe.FW else probe_res
+        with unittest.mock.patch.object(probe, "exec_in", fake_exec):
+            return probe.run_probe(p), calls
+
+    TCP = {"id": "a-x", "kind": "attack", "expect": "block", "from": "pc", "to": "10.10.30.10", "proto": "tcp",
+           "port": 80}
+    ICMP = {"id": "a-y", "kind": "attack", "expect": "block", "from": "pc", "to": "10.10.30.10", "proto": "icmp"}
+
+    def test_tcp_block_is_confirmed_from_fw_with_same_port(self):
+        r, calls = self.run_with(self.TCP, NC_TIMEOUT, NC_REFUSED)
+        self.assertEqual((r["observed"], r["pass"]), ("block", True))
+        self.assertEqual(r["evidence"], "nc: timed out (drop), fw 에서는 80/tcp RST 응답")
+        self.assertEqual(calls[1], (probe.FW, ("nc", "-vz", "-w", "2", "10.10.30.10", "80")))
+
+    def test_stopped_target_is_failure_not_block(self):
+        with self.assertRaisesRegex(probe.ProbeError, r"^a-x: 프로브 실행 실패 \[대상 응답 없음\] \(nc\) "
+                                                      r"fw 에서도 10\.10\.30\.10:80 가"):
+            self.run_with(self.TCP, NC_TIMEOUT, NC_TIMEOUT)
+
+    def test_fw_exec_failure_is_failure_not_block(self):
+        with self.assertRaisesRegex(probe.ProbeError, "대상 응답 없음"):
+            self.run_with(self.TCP, NC_TIMEOUT, done("", 125, STOPPED))
+
+    def test_icmp_block_is_confirmed_with_tcp_because_fw_has_no_net_raw(self):
+        r, calls = self.run_with(self.ICMP, done("", 1), NC_REFUSED)
+        self.assertEqual((r["observed"], r["evidence"]), ("block", "ping: 응답 없음 (drop), fw 에서는 1/tcp RST 응답"))
+        self.assertEqual(calls[1], (probe.FW, ("nc", "-vz", "-w", "2", "10.10.30.10", str(probe.ALIVE_PORT))))
+
+    def test_stopped_icmp_target_is_failure(self):
+        with self.assertRaisesRegex(probe.ProbeError, r"fw 에서도 10\.10\.30\.10 가"):
+            self.run_with(self.ICMP, done("", 1), NC_TIMEOUT)
+
+    def test_nmap_block_is_also_confirmed(self):
+        p = dict(self.TCP, tool="nmap")
+        nmap_filtered = done(HEAD + '<host><status state="up" reason="user-set"/><ports><port protocol="tcp" '
+                             'portid="80"><state state="filtered" reason="no-response" reason_ttl="0"/></port>'
+                             '</ports></host>' + TAIL.format(up=1))
+        with self.assertRaisesRegex(probe.ProbeError, r"\[대상 응답 없음\] \(nmap\)"):
+            self.run_with(p, nmap_filtered, NC_TIMEOUT)
+
+    def test_allow_does_not_query_fw(self):
+        r, calls = self.run_with(dict(self.TCP, expect="allow"),
+                                 done("", 0, "Connection to 10.10.30.10 80 port [tcp/*] succeeded!\n"), None)
+        self.assertEqual((r["observed"], [c for c, _ in calls]), ("allow", ["pc"]))

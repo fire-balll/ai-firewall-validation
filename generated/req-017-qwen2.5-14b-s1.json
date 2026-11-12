@@ -1,0 +1,65 @@
+{
+  "scenario": "req-017",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "침해된 IoT 기기(10.10.10.66)는 어디에도 접속할 수 없다",
+      "src": "10.10.10.66",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 0
+    },
+    {
+      "id": "r-002",
+      "intent": "서버의 웹 서비스(80)는 PC 망과 IoT 망의 기기 모두 쓸 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 1
+    },
+    {
+      "id": "r-003",
+      "intent": "서버의 업데이트 포트(8080)는 IoT 기기(10.10.10.10) 한 대만 쓸 수 있다",
+      "src": "10.10.10.10",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 2
+    },
+    {
+      "id": "r-004",
+      "intent": "PC 망은 서버의 개발 포트 대역(8000-8100)을 쓸 수 있다 단, 8080은 쓸 수 없다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "8000-8079",
+      "action": "accept",
+      "priority": 3
+    },
+    {
+      "id": "r-005",
+      "intent": "PC 망은 IoT 기기(10.10.10.10)의 관리 페이지(80)에 접속할 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.10.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 4
+    },
+    {
+      "id": "r-006",
+      "intent": "PC 망은 서버에 ping 할 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 5
+    }
+  ]
+}

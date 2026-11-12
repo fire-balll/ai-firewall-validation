@@ -1,0 +1,55 @@
+{
+  "scenario": "req-015",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "PC는 서버에 ping을 보낼 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 0
+    },
+    {
+      "id": "r-002",
+      "intent": "PC는 서버의 웹 서비스(포트 80)에 연결할 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 1
+    },
+    {
+      "id": "r-003",
+      "intent": "IoT 망의 기기는 서버에 ping을 보낼 수 있다",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.10",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "accept",
+      "priority": 2
+    },
+    {
+      "id": "r-004",
+      "intent": "침해된 기기(10.10.10.66)는 ping을 보내지 못한다",
+      "src": "10.10.10.66",
+      "dst": "10.10.30.10",
+      "proto": "icmp",
+      "dport": "any",
+      "action": "drop",
+      "priority": 3
+    },
+    {
+      "id": "r-005",
+      "intent": "기타 모든 연결을 차단한다",
+      "src": "any",
+      "dst": "any",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 100
+    }
+  ]
+}

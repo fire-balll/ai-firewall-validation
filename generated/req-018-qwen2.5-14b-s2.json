@@ -1,0 +1,45 @@
+{
+  "scenario": "req-018",
+  "rules": [
+    {
+      "id": "r-001",
+      "intent": "침해된 IoT 기기(10.10.10.66)가 서버 또는 PC로 포트 스캔을 시도하는 것을 차단",
+      "src": "10.10.10.66",
+      "dst": "any",
+      "proto": "tcp",
+      "dport": "any",
+      "action": "drop",
+      "priority": 1
+    },
+    {
+      "id": "r-002",
+      "intent": "IoT 기기가 서버 업데이트 포트(8080)를 통해 통신할 수 있다.",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "8080",
+      "action": "accept",
+      "priority": 2
+    },
+    {
+      "id": "r-003",
+      "intent": "IoT 기기가 PC 망의 알림 수신 포트(9000)로 통신할 수 있다.",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.20.0/24",
+      "proto": "tcp",
+      "dport": "9000",
+      "action": "accept",
+      "priority": 3
+    },
+    {
+      "id": "r-004",
+      "intent": "PC가 서버의 웹 서비스(80)를 통해 통신할 수 있다.",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 4
+    }
+  ]
+}

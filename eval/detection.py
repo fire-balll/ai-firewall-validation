@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""배치 결과로 동적 추가 탐지율을 계산한다. (담당: 강윤서)
+"""배치 결과로 동적 추가 탐지율과 위험 룰 탐지율을 계산한다. (담당: 강윤서)
 
 동적 추가 탐지율 = 정적 검증을 통과한 오류 중 동적 검증(프로브 실패 → 롤백)만 잡은 비율.
 대상은 오류 주입 룰셋(mutations/)이다. 정답과 다르다는 것이 확실한 룰셋은 이것뿐이다.
@@ -9,6 +9,8 @@
   dynamic  정적 검증을 통과했고, 적용 뒤 프로브가 실패해 롤백됨
   missed   정적 검증을 통과했고, 적용 뒤 모든 프로브가 통과함 (오류가 그대로 남음)
 비율 = dynamic / (dynamic + missed). static 은 분모에 넣지 않는다.
+위험 룰 탐지율 = 검증 전체(정적 + 동적)가 잡은 비율 = (static + dynamic) / (static + dynamic + missed) (docs/overview.md).
+분모는 동적 추가 탐지율과 같은 observable 후보만 쓴다.
 
 랩에서 관측할 수 없는 오류는 분모에서 뺀다 (AGENTS.md, scenarios/coverage.py #13).
 오류 주입 파일마다 실행 전에 정한다:
@@ -27,7 +29,7 @@ unobservable·equivalent 로 분류한 후보가 롤백되면 분류나 랩이 �
   manifest 가 끝나지 않음, 커밋 안 된 변경으로 돌린 배치(--allow-dirty 없이), 오류 주입 파일·시나리오·
   실행 산출물이 없음, manifest status 와 산출물이 맞지 않음, 정답과의 전체 비교를 할 수 없음
 
-출력: {"batch_id", "commit", "rate", "rate_without_state", "by_type", "excluded", "aborted", "inconsistent",
+출력: {"batch_id", "commit", "rate", "rate_without_state", "risk_detection_rate", "by_type", "excluded", "aborted", "inconsistent",
        "anomalies", "candidates": [...]}
 사용: detection.py eval/results/batch-20261030-090000.json
 """
@@ -102,6 +104,13 @@ def _rate(counts):
             "value": round(counts["dynamic"] / d, 4) if d else None}
 
 
+def _risk_rate(counts):
+    caught = counts["static"] + counts["dynamic"]
+    d = caught + counts["missed"]
+    return {"static": counts["static"], "dynamic": counts["dynamic"], "missed": counts["missed"], "denominator": d,
+            "value": round(caught / d, 4) if d else None}
+
+
 def build(manifest, batch_id, host_ips):
     runs = [r for r in manifest["runs"] if (MUTATIONS / f"{r['candidate']}.json").exists() and "meta" not in r]
     golds = {}
@@ -151,8 +160,9 @@ def build(manifest, batch_id, host_ips):
     return {
         "batch_id": batch_id, "commit": manifest["commit"],
         "rate": _rate(total), "rate_without_state": _rate(without_state),
-        "static_caught": total["static"],
-        "by_type": {t: dict(_rate(c), static=c["static"]) for t, c in sorted(by_type.items())},
+        "static_caught": total["static"], "risk_detection_rate": _risk_rate(total),
+        "by_type": {t: dict(_rate(c), static=c["static"], risk_detection_value=_risk_rate(c)["value"])
+                    for t, c in sorted(by_type.items())},
         "excluded": {k: sorted(v) for k, v in sorted(excluded.items())},
         "aborted": [{"scenario": s, "candidate": c, "count": n} for (s, c), n in sorted(aborted.items())],
         "inconsistent": inconsistent, "anomalies": anomalies, "candidates": candidates,

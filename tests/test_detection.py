@@ -107,6 +107,29 @@ class DetectionTest(Base):
         self.assertIsNone(r["by_type"]["widen"]["value"])
         self.assertEqual(r["by_type"]["port"]["value"], 1.0)
 
+    def test_risk_detection_rate_counts_static_and_dynamic(self):
+        self.add_mutation("req-001-port-01", PORT)
+        self.add_mutation("req-001-widen-01", WIDE)
+        self.add_mutation("req-001-missing-01", mutant(**{"g-002": {"dport": "81"}}))
+        for rep in (1, 2, 3):
+            self.add_run("req-001-port-01", "rolled_back", rep=rep)
+            self.add_run("req-001-widen-01", "rejected_approval", rep=rep, validation=HIGH)
+        self.add_run("req-001-missing-01", "applied")
+        r = self.build()
+        self.assertEqual(r["risk_detection_rate"],
+                         {"static": 3, "dynamic": 3, "missed": 1, "denominator": 7, "value": 0.8571})
+        self.assertEqual(r["by_type"]["widen"]["risk_detection_value"], 1.0)
+        self.assertEqual(r["by_type"]["missing"]["risk_detection_value"], 0.0)
+
+    def test_risk_detection_rate_leaves_out_excluded(self):
+        self.add_mutation("req-001-order-01", SWAPPED)
+        self.add_mutation("req-001-extra-01", UDP_ONLY)
+        self.add_run("req-001-order-01", "rejected_approval", validation=HIGH)
+        self.add_run("req-001-extra-01", "applied")
+        r = self.build()
+        self.assertEqual(r["risk_detection_rate"]["denominator"], 0)
+        self.assertIsNone(r["risk_detection_rate"]["value"])
+
     def test_validation_rejection_is_static(self):
         self.add_mutation("req-001-port-01", PORT)
         self.add_run("req-001-port-01", "rejected_validation", validation=BAD)

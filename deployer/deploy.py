@@ -13,7 +13,9 @@ deployer 가 강제 종료돼도 후보 룰이 남지 않도록, 적용 전에 f
 
 출력: {"stateful", "applied", "rolled_back", "aborted", "error", "t_apply", "t_detect", "t_restored", "detect_s",
        "mttr_s", "probe", "deadman", "recovered"}
-  aborted=true 이면 실행 실패(프로브 예외 등)로 원복하고 종료 코드 1
+  aborted=true 이면 실행 실패(프로브 예외 등)로 원복하고 종료 코드 1. 이때 detect_s·mttr_s 는 비운다(결과가 아니므로).
+    rolled_back 은 "프로브 실패를 보고 되돌렸는가" 그대로 남긴다. 그래서 aborted 와 rolled_back 이 함께 true 일 수 있다
+    (롤백 뒤 타이머가 이미 만료돼 있던 경우). 복구 시간을 모을 때는 aborted 를 먼저 거른다
   감시 도중 타이머가 먼저 만료되면 그 뒤 프로브는 원래 룰셋을 본 것이므로 결과로 내지 않고 aborted
 사용: deploy.py out/candidate.json --scenario scenarios/req-001.json --watch 60 > out/deploy.json
 """
@@ -121,6 +123,7 @@ def main():
     except BaseException as e:
         out["aborted"] = True
         out["error"] = f"{type(e).__name__}: {e}"
+        out["detect_s"] = out["mttr_s"] = None  # 실행 실패의 측정값이 복구 시간 집계에 섞이지 않게 한다
         if not out["rolled_back"]:
             try:
                 nft_apply(saved)

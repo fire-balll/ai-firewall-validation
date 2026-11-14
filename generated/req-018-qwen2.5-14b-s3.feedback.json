@@ -1,0 +1,21 @@
+{
+  "scenario": "req-018",
+  "candidate": "req-018-qwen2.5-14b-s3",
+  "round": 1,
+  "source": {
+    "batch_id": "20261112-162424",
+    "rep": 1,
+    "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+  },
+  "stage": "approval",
+  "validation": {
+    "ok": true,
+    "risk": "high",
+    "errors": [],
+    "reasons": [
+      "r-005: correlation - r-001(accept) 와 r-005(drop) 의 범위가 일부 겹치고 겹친 부분은 앞의 accept 가 이긴다 (과허용 위험, 순서 확인 필요)",
+      "r-004: correlation - r-002(accept) 와 r-004(drop) 의 범위가 일부 겹치고 겹친 부분은 앞의 accept 가 이긴다 (과허용 위험, 순서 확인 필요)"
+    ]
+  },
+  "failed_probes": []
+}

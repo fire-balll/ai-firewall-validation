@@ -1,0 +1,41 @@
+{
+  "scenario": "req-017",
+  "candidate": "req-017-qwen2.5-14b-s1",
+  "round": 1,
+  "source": {
+    "batch_id": "20261112-162424",
+    "rep": 1,
+    "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+  },
+  "stage": "deploy",
+  "validation": {
+    "ok": true,
+    "risk": "low",
+    "errors": [],
+    "reasons": []
+  },
+  "failed_probes": [
+    {
+      "id": "n-002",
+      "kind": "normal",
+      "from": "iot-dev",
+      "from_ip": "10.10.10.10",
+      "to": "10.10.30.10",
+      "proto": "tcp",
+      "port": 80,
+      "expect": "allow",
+      "observed": "block"
+    },
+    {
+      "id": "n-005",
+      "kind": "normal",
+      "from": "pc2",
+      "from_ip": "10.10.20.11",
+      "to": "10.10.30.10",
+      "proto": "tcp",
+      "port": 8100,
+      "expect": "allow",
+      "observed": "block"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "scenario": "req-016",
+  "candidate": "req-016-qwen2.5-14b-s1",
+  "round": 1,
+  "source": {
+    "batch_id": "20261112-162424",
+    "rep": 1,
+    "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+  },
+  "stage": "approval",
+  "validation": {
+    "ok": true,
+    "risk": "high",
+    "errors": [],
+    "reasons": [
+      "r-001: accept 범위가 /16 보다 넓음"
+    ]
+  },
+  "failed_probes": []
+}

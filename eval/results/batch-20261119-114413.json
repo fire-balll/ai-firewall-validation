@@ -1,0 +1,900 @@
+{
+  "commit": "910dc8e608b49d7fba50bfb0742d48cadd4d913b",
+  "dirty": false,
+  "args": {
+    "scenarios": "scenarios/req-01[5-8].json",
+    "candidates": "generated",
+    "reps": 1,
+    "watch": 10,
+    "approve": "no",
+    "allow_dirty": false
+  },
+  "started": "2026-11-19T11:44:13",
+  "finished": "2026-11-19T11:50:48",
+  "runs": [
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-qwen2.5-14b-s1-r2",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261119-114413/req-015-req-015-qwen2.5-14b-s1-r2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-015",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-14T00:18:39+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1368,
+            "eval_count": 491,
+            "total_duration_ns": 64651139250,
+            "problems": []
+          }
+        ],
+        "round": 2,
+        "parent": "req-015-qwen2.5-14b-s1",
+        "feedback_version": "f1",
+        "feedback": {
+          "file": "generated/req-015-qwen2.5-14b-s1.feedback.json",
+          "stage": "approval",
+          "source": {
+            "batch_id": "20261112-162424",
+            "rep": 1,
+            "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261119-114413/req-015-req-015-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-015",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:12:49+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 747,
+            "eval_count": 495,
+            "total_duration_ns": 40897222916,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-qwen2.5-14b-s2-r2",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261119-114413/req-015-req-015-qwen2.5-14b-s2-r2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-015",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-14T00:19:21+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1292,
+            "eval_count": 417,
+            "total_duration_ns": 41729947583,
+            "problems": []
+          }
+        ],
+        "round": 2,
+        "parent": "req-015-qwen2.5-14b-s2",
+        "feedback_version": "f1",
+        "feedback": {
+          "file": "generated/req-015-qwen2.5-14b-s2.feedback.json",
+          "stage": "approval",
+          "source": {
+            "batch_id": "20261112-162424",
+            "rep": 1,
+            "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261119-114413/req-015-req-015-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-015",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:13:23+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 747,
+            "eval_count": 419,
+            "total_duration_ns": 33887677250,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-qwen2.5-14b-s3-r2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261119-114413/req-015-req-015-qwen2.5-14b-s3-r2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-015",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-14T00:20:14+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1457,
+            "eval_count": 528,
+            "total_duration_ns": 52188211542,
+            "problems": []
+          }
+        ],
+        "round": 2,
+        "parent": "req-015-qwen2.5-14b-s3",
+        "feedback_version": "f1",
+        "feedback": {
+          "file": "generated/req-015-qwen2.5-14b-s3.feedback.json",
+          "stage": "approval",
+          "source": {
+            "batch_id": "20261112-162424",
+            "rep": 1,
+            "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "req-015-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261119-114413/req-015-req-015-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-015",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:14:05+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 747,
+            "eval_count": 528,
+            "total_duration_ns": 42394498166,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-qwen2.5-14b-s1-r2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261119-114413/req-016-req-016-qwen2.5-14b-s1-r2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-016",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-14T00:21:00+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1244,
+            "eval_count": 485,
+            "total_duration_ns": 46204430167,
+            "problems": []
+          }
+        ],
+        "round": 2,
+        "parent": "req-016-qwen2.5-14b-s1",
+        "feedback_version": "f1",
+        "feedback": {
+          "file": "generated/req-016-qwen2.5-14b-s1.feedback.json",
+          "stage": "approval",
+          "source": {
+            "batch_id": "20261112-162424",
+            "rep": 1,
+            "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261119-114413/req-016-req-016-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-016",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:15:12+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 774,
+            "eval_count": 409,
+            "total_duration_ns": 33926765583,
+            "problems": [
+              "rules/3/dst: '10.10.20.0/24,10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "r-004.dst: '10.10.20.0/24,10.10.30.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1346,
+            "eval_count": 382,
+            "total_duration_ns": 32931122333,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261119-114413/req-016-req-016-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-016",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:16:33+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 774,
+            "eval_count": 385,
+            "total_duration_ns": 31088893500,
+            "problems": [
+              "rules/1/dst: '10.10.20.0/24, 10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/2/dst: '10.10.20.0/24, 10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "r-002.dst: '10.10.20.0/24, 10.10.30.0/24' does not appear to be an IPv4 or IPv6 network",
+              "r-003.dst: '10.10.20.0/24, 10.10.30.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1452,
+            "eval_count": 574,
+            "total_duration_ns": 49401034791,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-qwen2.5-14b-s3-r2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261119-114413/req-016-req-016-qwen2.5-14b-s3-r2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-016",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-14T00:21:47+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1253,
+            "eval_count": 498,
+            "total_duration_ns": 46528231333,
+            "problems": []
+          }
+        ],
+        "round": 2,
+        "parent": "req-016-qwen2.5-14b-s3",
+        "feedback_version": "f1",
+        "feedback": {
+          "file": "generated/req-016-qwen2.5-14b-s3.feedback.json",
+          "stage": "approval",
+          "source": {
+            "batch_id": "20261112-162424",
+            "rep": 1,
+            "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "req-016-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261119-114413/req-016-req-016-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-016",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:17:35+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 774,
+            "eval_count": 334,
+            "total_duration_ns": 26901478750,
+            "problems": [
+              "rules/0/dst: '10.10.20.0/24,10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/2/dst: '10.10.20.0/24,10.10.30.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "r-001.dst: '10.10.20.0/24,10.10.30.0/24' does not appear to be an IPv4 or IPv6 network",
+              "r-003.dst: '10.10.20.0/24,10.10.30.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1397,
+            "eval_count": 391,
+            "total_duration_ns": 34675631500,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-qwen2.5-14b-s1-r2",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261119-114413/req-017-req-017-qwen2.5-14b-s1-r2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-017",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-14T00:24:20+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1800,
+            "eval_count": 728,
+            "total_duration_ns": 75991066041,
+            "problems": [
+              "rules/1/src: '10.10.10.0/24, 10.10.20.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/3/dport: '8000-8079, 8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'",
+              "r-002.src: '10.10.10.0/24, 10.10.20.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 2744,
+            "eval_count": 837,
+            "total_duration_ns": 77183546250,
+            "problems": []
+          }
+        ],
+        "round": 2,
+        "parent": "req-017-qwen2.5-14b-s1",
+        "feedback_version": "f1",
+        "feedback": {
+          "file": "generated/req-017-qwen2.5-14b-s1.feedback.json",
+          "stage": "deploy",
+          "source": {
+            "batch_id": "20261112-162424",
+            "rep": 1,
+            "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261119-114413/req-017-req-017-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-017",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:19:35+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 876,
+            "eval_count": 728,
+            "total_duration_ns": 60784243458,
+            "problems": [
+              "rules/1/src: '10.10.20.0/24, 10.10.10.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/3/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'",
+              "r-002.src: '10.10.20.0/24, 10.10.10.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1824,
+            "eval_count": 703,
+            "total_duration_ns": 59895575792,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-qwen2.5-14b-s2-r2",
+      "rep": 1,
+      "status": "rejected_validation",
+      "out": "out/batch-20261119-114413/req-017-req-017-qwen2.5-14b-s2-r2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-017",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-14T00:26:48+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1821,
+            "eval_count": 857,
+            "total_duration_ns": 82330255833,
+            "problems": [
+              "rules/3/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 2772,
+            "eval_count": 752,
+            "total_duration_ns": 65544929042,
+            "problems": [
+              "rules/1/src: '10.10.20.0/24,10.10.10.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/3/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'",
+              "r-002.src: '10.10.20.0/24,10.10.10.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          }
+        ],
+        "round": 2,
+        "parent": "req-017-qwen2.5-14b-s2",
+        "feedback_version": "f1",
+        "feedback": {
+          "file": "generated/req-017-qwen2.5-14b-s2.feedback.json",
+          "stage": "deploy",
+          "source": {
+            "batch_id": "20261112-162424",
+            "rep": 1,
+            "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261119-114413/req-017-req-017-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-017",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:21:38+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 876,
+            "eval_count": 749,
+            "total_duration_ns": 60395441209,
+            "problems": [
+              "rules/1/src: '10.10.20.0/24, 10.10.10.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/3/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'",
+              "r-002.src: '10.10.20.0/24, 10.10.10.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1845,
+            "eval_count": 724,
+            "total_duration_ns": 61989709417,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-qwen2.5-14b-s3-r2",
+      "rep": 1,
+      "status": "rejected_validation",
+      "out": "out/batch-20261119-114413/req-017-req-017-qwen2.5-14b-s3-r2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-017",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-14T00:29:18+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1892,
+            "eval_count": 745,
+            "total_duration_ns": 72857677250,
+            "problems": [
+              "rules/1/src: '10.10.20.0/24, 10.10.10.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "r-002.src: '10.10.20.0/24, 10.10.10.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 2801,
+            "eval_count": 853,
+            "total_duration_ns": 76488841041,
+            "problems": [
+              "rules/4/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'"
+            ]
+          }
+        ],
+        "round": 2,
+        "parent": "req-017-qwen2.5-14b-s3",
+        "feedback_version": "f1",
+        "feedback": {
+          "file": "generated/req-017-qwen2.5-14b-s3.feedback.json",
+          "stage": "deploy",
+          "source": {
+            "batch_id": "20261112-162424",
+            "rep": 1,
+            "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "req-017-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "rolled_back",
+      "out": "out/batch-20261119-114413/req-017-req-017-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-017",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:23:52+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 876,
+            "eval_count": 755,
+            "total_duration_ns": 61882438792,
+            "problems": [
+              "rules/1/src: '10.10.20.0/24, 10.10.10.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "rules/3/dport: '8000-8079,8081-8100' does not match '^(any|[0-9]{1,5}(-[0-9]{1,5})?)$'",
+              "r-002.src: '10.10.20.0/24, 10.10.10.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1851,
+            "eval_count": 843,
+            "total_duration_ns": 72286326875,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-qwen2.5-14b-s1",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261119-114413/req-018-req-018-qwen2.5-14b-s1-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 1,
+        "prompt_version": "v2",
+        "scenario": "req-018",
+        "options": {
+          "temperature": 0.7,
+          "seed": 1,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:24:41+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 807,
+            "eval_count": 579,
+            "total_duration_ns": 48079556250,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-qwen2.5-14b-s2",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261119-114413/req-018-req-018-qwen2.5-14b-s2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 2,
+        "prompt_version": "v2",
+        "scenario": "req-018",
+        "options": {
+          "temperature": 0.7,
+          "seed": 2,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:25:59+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 807,
+            "eval_count": 479,
+            "total_duration_ns": 39002926291,
+            "problems": [
+              "rules/0/dst: '10.10.30.0/24,10.10.20.0/24' does not match '^(any|([0-9]{1,3}\\\\.){3}[0-9]{1,3}(/[0-9]{1,2})?)$'",
+              "r-001.dst: '10.10.30.0/24,10.10.20.0/24' does not appear to be an IPv4 or IPv6 network"
+            ]
+          },
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1449,
+            "eval_count": 453,
+            "total_duration_ns": 38911767584,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-qwen2.5-14b-s3-r2",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261119-114413/req-018-req-018-qwen2.5-14b-s3-r2-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-018",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-14T00:30:39+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 1583,
+            "eval_count": 858,
+            "total_duration_ns": 81077826583,
+            "problems": []
+          }
+        ],
+        "round": 2,
+        "parent": "req-018-qwen2.5-14b-s3",
+        "feedback_version": "f1",
+        "feedback": {
+          "file": "generated/req-018-qwen2.5-14b-s3.feedback.json",
+          "stage": "approval",
+          "source": {
+            "batch_id": "20261112-162424",
+            "rep": 1,
+            "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "req-018-qwen2.5-14b-s3",
+      "rep": 1,
+      "status": "rejected_approval",
+      "out": "out/batch-20261119-114413/req-018-req-018-qwen2.5-14b-s3-r1",
+      "meta": {
+        "model": "qwen2.5:14b",
+        "digest": "7cdf5a0187d5c58cc5d369b255592f7841d1c4696d45a8c8a9489440385b22f6",
+        "ollama_version": "0.40.3",
+        "temperature": 0.7,
+        "seed": 3,
+        "prompt_version": "v2",
+        "scenario": "req-018",
+        "options": {
+          "temperature": 0.7,
+          "seed": 3,
+          "num_ctx": 8192
+        },
+        "time": "2026-11-12T06:26:47+00:00",
+        "attempts": [
+          {
+            "done_reason": "stop",
+            "prompt_eval_count": 807,
+            "eval_count": 589,
+            "total_duration_ns": 47853266000,
+            "problems": []
+          }
+        ],
+        "round": 1
+      }
+    }
+  ]
+}

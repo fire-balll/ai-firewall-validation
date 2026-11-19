@@ -249,7 +249,7 @@ class UdpCommandTest(unittest.TestCase):
 class UdpRunTest(unittest.TestCase):
     """run_probe: block 은 fw 에서 에코 서비스가 살아 있는지 확인한 뒤에만 낸다."""
 
-    def run_with(self, outputs):
+    def run_with(self, outputs, **extra):
         calls = []
 
         def fake_exec(container, *cmd, timeout=30):
@@ -257,7 +257,7 @@ class UdpRunTest(unittest.TestCase):
             return done(outputs[len(calls) - 1])
 
         p = {"id": "a-x", "kind": "attack", "expect": "block", "from": "pc", "to": "10.10.30.10",
-             "proto": "udp", "port": 53}
+             "proto": "udp", "port": 53, **extra}
         with unittest.mock.patch.object(probe, "exec_in", fake_exec), \
                 unittest.mock.patch.object(probe, "udp_echo", return_value=ECHO):
             return probe.run_probe(p), calls
@@ -274,6 +274,11 @@ class UdpRunTest(unittest.TestCase):
     def test_allow_does_not_query_fw(self):
         result, calls = self.run_with([UDP_REPLY])
         self.assertEqual((result["observed"], calls), ("allow", ["pc"]))
+
+    def test_probe_set_is_copied_to_result(self):
+        # 시나리오 프로브 v2(#74): 결과만 보고 v1 / v2 통과율을 나눌 수 있게 set 을 남긴다. 없으면 v1
+        self.assertEqual(self.run_with([UDP_REPLY], set="v2")[0]["set"], "v2")
+        self.assertEqual(self.run_with([UDP_REPLY])[0]["set"], "v1")
 
     def test_timeout_on_non_echo_port_names_the_reason(self):
         def fake_exec(container, *cmd, timeout=30):

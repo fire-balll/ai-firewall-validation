@@ -76,6 +76,25 @@ class ScenarioTest(unittest.TestCase):
         self.assertIn("action:g-001", result["missed"])
         self.assertNotIn("action:g-001", result["equivalent"])
 
+    def test_probe_gaps_find_narrowed_subnet(self):
+        # #74: IoT 망 허용을 iot-dev 한 대로 좁혀도 iot-dev 출발 프로브만 있으면 안 드러난다
+        probe = {"id": "n-001", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp",
+                 "port": 80, "expect": "allow"}
+        s = {"id": "t", "gold": {"scenario": "t", "rules": [
+                 dict(rule("10.10.10.0/24", "10.10.30.10/32", "tcp", "80"), id="g-001")]},
+             "probes": [probe]}
+        result = analyze(s, self.host_ips)
+        gaps = {g["name"]: g["probe"] for g in result["probe_gaps"]}
+        self.assertEqual(list(gaps), ["narrow:g-001.src->iot-dev"])
+        self.assertEqual(gaps["narrow:g-001.src->iot-dev"]["from"], "attacker")
+        self.assertEqual(gaps["narrow:g-001.src->iot-dev"]["expect"], "allow")
+        # 좁히기는 오류 주입 유형이 아니므로 변형 수와 분류에 섞이지 않는다
+        for key in ("equivalent", "uncovered", "missed"):
+            self.assertFalse([n for n in result[key] if n.startswith("narrow:")])
+
+        s["probes"] = [probe, dict(probe, id="n-002", **{"from": "attacker"})]
+        self.assertEqual(analyze(s, self.host_ips)["probe_gaps"], [])
+
     def test_udp_probes_only_to_echo_service(self):
         # #62: UDP 응답 없음을 차단으로 볼 수 있는 곳은 에코 서비스뿐이다
         echo = {("10.10.30.10", 53)}

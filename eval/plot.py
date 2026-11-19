@@ -53,8 +53,13 @@ def _svg(height, title, body):
             + "\n".join(body) + "\n</svg>\n")
 
 
-def _legend(items, y):
-    out, x = [], LEFT
+def _text_w(s, size=13):
+    """글자 폭 근사: 한글 등은 글자 크기만큼, 그 외(숫자·영문)는 0.62배."""
+    return sum(size if ord(c) > 127 else size * 0.62 for c in s)
+
+
+def _legend(items, y, x=LEFT):
+    out = []
     for color, name in items:
         out.append(f'<rect x="{x}" y="{y - 10}" width="12" height="12" rx="2" fill="{color}"/>'
                    f'<text x="{x + 18}" y="{y}" font-size="13" fill="{INK2}">{escape(name)}</text>')
@@ -73,27 +78,29 @@ def _bar(x, y, w, color, tip, round_end):
 
 
 def _stacked(rows, series, title):
-    """rows: [(라벨, {키: 수})]. 줄마다 100% 누적 막대, 칸 사이 2px 바탕 틈."""
-    plot_w = W - LEFT - RIGHT
+    """rows: [(라벨, {키: 수})]. 줄마다 100% 누적 막대, 칸 사이 2px 바탕 틈.
+    왼쪽 여백은 가장 긴 행 이름에 맞춘다 (배치 ID 가 붙은 이름이 잘리지 않게)."""
+    left = max(LEFT, round(24 + max(_text_w(label) for label, _ in rows) + 12))
+    plot_w = W - left - RIGHT
     top = 84
-    body = _legend([(SERIES[i], name) for i, (_, name) in enumerate(series)], 62)
+    body = _legend([(SERIES[i], name) for i, (_, name) in enumerate(series)], 62, left)
     for i, (label, counts) in enumerate(rows):
         y = top + i * ROW
         total = sum(counts.get(k, 0) for k, _ in series)
         if not total:
             raise PlotError(f"{label}: 실행 수 0")
-        body.append(f'<text x="{LEFT - 12}" y="{y + 15}" font-size="13" fill="{INK}" text-anchor="end">'
+        body.append(f'<text x="{left - 12}" y="{y + 15}" font-size="13" fill="{INK}" text-anchor="end">'
                     f'{escape(label)}</text>')
         parts = [(k, name, counts.get(k, 0)) for k, name in series]
         last = max(j for j, (_, _, n) in enumerate(parts) if n)
-        x = LEFT
+        x = left
         for j, (_, name, n) in enumerate(parts):
             if not n:
                 continue
             w = plot_w * n / total - (0 if j == last else 2)
             body.append(_bar(x, y, w, SERIES[j], f"{label} · {name} {n}회 ({n / total:.0%})", j == last))
             x += w + 2
-        body.append(f'<text x="{LEFT + plot_w + 8}" y="{y + 15}" font-size="13" fill="{INK2}">{total}회</text>')
+        body.append(f'<text x="{left + plot_w + 8}" y="{y + 15}" font-size="13" fill="{INK2}">{total}회</text>')
     return _svg(top + len(rows) * ROW + 16, title, body)
 
 

@@ -1,3 +1,4 @@
+import re
 import unittest
 
 from eval.plot import PlotError, render, timing_rows
@@ -25,6 +26,17 @@ class PlotTest(unittest.TestCase):
         self.assertEqual(sorted(files), ["detect.svg", "mttr.svg", "status.svg"])
         self.assertIn("오류 주입 · 롤백 4회 (67%)", files["status.svg"])
         self.assertIn("6회", files["status.svg"])
+
+    def test_long_row_labels_stay_inside(self):
+        two = {"batches": [{"batch_id": b, "kinds": {"generated": {"status": {"applied": 1}}}}
+                           for b in ("20261112-162424", "20261112-170000")], "groups": SUMMARY["groups"]}
+        svg = render(two)["status.svg"]
+        self.assertIn("AI 후보 20261112-162424", svg)
+        # 행 이름은 text-anchor=end 라 x 가 이름 폭(한글 13px·그 외 약 8px)보다 커야 그림 안에 든다
+        for x, label in re.findall(r'<text x="([\d.]+)" y="[\d.]+" font-size="13" fill="#0b0b0b" '
+                                   r'text-anchor="end">([^<]+)</text>', svg):
+            width = sum(13 if ord(c) > 127 else 8 for c in label)
+            self.assertGreater(float(x), width, label)
 
     def test_scenario_mean_is_weighted_by_runs(self):
         self.assertEqual(timing_rows(SUMMARY, "detect_s"), [("req-001", 12.5), ("req-002", 30.0)])

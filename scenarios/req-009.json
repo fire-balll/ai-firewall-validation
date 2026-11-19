@@ -26,6 +26,7 @@
     { "id": "a-002", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 8080, "expect": "block" },
     { "id": "n-002", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8000, "expect": "allow" },
     { "id": "a-003", "kind": "attack", "from": "pc", "to": "10.10.10.10", "proto": "tcp", "port": 8000, "expect": "block" },
-    { "id": "n-003", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8100, "expect": "allow" }
+    { "id": "n-003", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 8100, "expect": "allow" },
+    { "id": "n-004", "kind": "normal", "from": "pc2", "to": "10.10.30.10", "proto": "tcp", "port": 8000, "expect": "allow", "set": "v2" }
   ]
 }

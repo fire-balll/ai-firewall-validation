@@ -1,0 +1,45 @@
+{
+  "scenario": "req-022",
+  "rules": [
+    {
+      "id": "g-001",
+      "intent": "침해된 기기(10.10.10.66)는 서버로 아무것도 보낼 수 없다",
+      "src": "10.10.10.66/32",
+      "dst": "10.10.30.10/32",
+      "proto": "any",
+      "dport": "any",
+      "action": "drop",
+      "priority": 110
+    },
+    {
+      "id": "g-002",
+      "intent": "IoT 망의 기기는 서버의 MQTT 포트(1883)를 쓸 수 있다",
+      "src": "10.10.10.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "1883",
+      "action": "accept",
+      "priority": 100
+    },
+    {
+      "id": "g-003",
+      "intent": "PC 망은 서버의 SSH(22)를 쓸 수 있다",
+      "src": "10.10.20.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "22",
+      "action": "accept",
+      "priority": 120
+    },
+    {
+      "id": "g-004",
+      "intent": "게스트 망은 서버의 웹 서비스(80)만 쓸 수 있다",
+      "src": "10.10.40.0/24",
+      "dst": "10.10.30.10/32",
+      "proto": "tcp",
+      "dport": "80",
+      "action": "accept",
+      "priority": 130
+    }
+  ]
+}

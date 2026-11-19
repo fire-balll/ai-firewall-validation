@@ -49,7 +49,7 @@ IR 에는 상태 추적 룰을 끌 필드가 없어서, state 후보는 **IR 이
 
 ## 파일 목록
 
-원본은 모두 `scenarios/<시나리오>.json` 의 gold 다. req-011 ~ 021 은 4주차에, req-019 는 UDP 프로브(#62) 머지 뒤에 추가했다. 위 유형 표의 "적용할 시나리오" 열은 req-001 ~ 010 기준이다. "정적"은 현재 `validator/validate.py` 의 risk(모두 ok=true), "실패 프로브"는 `common/sim.py` 시뮬레이터로 시나리오 프로브를 돌렸을 때 정답과 판정이 달라지는 프로브다. 랩 실측이 아니다. "v2:" 뒤는 본 실험 1차 뒤에 더한 v2 프로브(`"set": "v2"`, #74) 중 판정이 달라지는 것이다. state 유형은 시뮬레이터로 드러나지 않으므로 랩 결과(Mac, rootless Podman. req-001 ~ 010 은 #23, req-011 ~ 020 은 #51, req-019·021 은 각 파일을 추가한 PR)를 괄호로 적었다.
+원본은 모두 `scenarios/<시나리오>.json` 의 gold 다. req-011 ~ 021 은 4주차에, req-019 는 UDP 프로브(#62) 머지 뒤에, req-022 는 hping3 시나리오(#79)와 함께 추가했다. 위 유형 표의 "적용할 시나리오" 열은 req-001 ~ 010 기준이다. "정적"은 현재 `validator/validate.py` 의 risk(모두 ok=true), "실패 프로브"는 `common/sim.py` 시뮬레이터로 시나리오 프로브를 돌렸을 때 정답과 판정이 달라지는 프로브다. 랩 실측이 아니다. "v2:" 뒤는 본 실험 1차 뒤에 더한 v2 프로브(`"set": "v2"`, #74) 중 판정이 달라지는 것이다. state 유형은 시뮬레이터로 드러나지 않으므로 랩 결과(Mac, rootless Podman. req-001 ~ 010 은 #23, req-011 ~ 020 은 #51, req-019·021·022 는 각 파일을 추가한 PR)를 괄호로 적었다.
 
 | 파일 | 원본 | 유형 | 바꾼 내용 | 정적 | 실패 프로브 (시뮬레이터) |
 | --- | --- | --- | --- | --- | --- |
@@ -113,3 +113,6 @@ IR 에는 상태 추적 룰을 끌 필드가 없어서, state 후보는 **IR 이
 | req-021-range-01.json | req-021 | range | g-001(PC 망 → 서버 8000-8019 drop) 의 dport 8000-8019 → 8000-8079. g-001 과 g-002 가 합쳐서 g-003(8000-8100 accept) 을 모두 가림 (union shadow) | low | n-001~n-003 |
 | req-021-state-01.json | req-021 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-004) |
 | req-021-widen-01.json | req-021 | widen | g-004(IoT 기기 → 서버 8080) 의 src 10.10.10.10/32 → 10.10.10.0/24 | low | a-007 |
+| req-022-missing-01.json | req-022 | missing | g-001(침해 기기 → 서버 drop) 삭제. 침해 기기도 IoT 망 허용(1883)을 받게 됨 | low | a-001 (hping3) |
+| req-022-order-01.json | req-022 | order | g-001(침해 기기 → 서버 drop) 과 g-002(IoT 망 → 서버 1883 accept) 의 priority 를 맞바꿈 | high | a-001 (hping3) |
+| req-022-state-01.json | req-022 | state | 상태 추적 룰을 뺌 (IR 은 정답 그대로) | low | 없음 (랩: n-001~n-004) |

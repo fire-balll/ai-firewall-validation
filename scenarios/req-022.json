@@ -1,0 +1,72 @@
+{
+  "id": "req-022",
+  "description": "공격 프로브(hping3 SYN)를 쓰는 시나리오. 침해된 기기가 서버의 어느 포트로 SYN 을 보내도 응답이 없어야 한다. IoT 망 허용 룰이 침해 기기 drop 보다 앞서거나(order) drop 이 accept 로 바뀌면(action) hping3 프로브에 SYN-ACK·RST 가 돌아온다. hping3 는 SYN 1개라 판정은 nmap 과 같고, 도구가 시나리오·배치에서 동작하는지 확인하는 것이 목적이다 (#40, #79).",
+  "requirements": [
+    "침해된 기기(10.10.10.66)는 서버로 아무것도 보낼 수 없다",
+    "IoT 망의 기기는 서버의 MQTT 포트(1883)를 쓸 수 있다",
+    "PC 망은 서버의 SSH(22)를 쓸 수 있다",
+    "게스트 망은 서버의 웹 서비스(80)만 쓸 수 있다"
+  ],
+  "gold": {
+    "scenario": "req-022",
+    "rules": [
+      {
+        "id": "g-001",
+        "intent": "침해된 기기(10.10.10.66)는 서버로 아무것도 보낼 수 없다",
+        "src": "10.10.10.66/32",
+        "dst": "10.10.30.10/32",
+        "proto": "any",
+        "dport": "any",
+        "action": "drop",
+        "priority": 100
+      },
+      {
+        "id": "g-002",
+        "intent": "IoT 망의 기기는 서버의 MQTT 포트(1883)를 쓸 수 있다",
+        "src": "10.10.10.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "1883",
+        "action": "accept",
+        "priority": 110
+      },
+      {
+        "id": "g-003",
+        "intent": "PC 망은 서버의 SSH(22)를 쓸 수 있다",
+        "src": "10.10.20.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "22",
+        "action": "accept",
+        "priority": 120
+      },
+      {
+        "id": "g-004",
+        "intent": "게스트 망은 서버의 웹 서비스(80)만 쓸 수 있다",
+        "src": "10.10.40.0/24",
+        "dst": "10.10.30.10/32",
+        "proto": "tcp",
+        "dport": "80",
+        "action": "accept",
+        "priority": 130
+      }
+    ]
+  },
+  "probes": [
+    { "id": "n-001", "kind": "normal", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 1883, "expect": "allow" },
+    { "id": "n-002", "kind": "normal", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 22, "expect": "allow" },
+    { "id": "n-003", "kind": "normal", "from": "pc2", "to": "10.10.30.10", "proto": "tcp", "port": 22, "expect": "allow" },
+    { "id": "n-004", "kind": "normal", "from": "guest", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "allow" },
+    { "id": "a-001", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 1883, "tool": "hping3", "expect": "block" },
+    { "id": "a-002", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 22, "tool": "hping3", "expect": "block" },
+    { "id": "a-003", "kind": "attack", "from": "attacker", "to": "10.10.30.10", "proto": "tcp", "port": 80, "tool": "hping3", "expect": "block" },
+    { "id": "a-004", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 22, "expect": "block" },
+    { "id": "a-005", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 1883, "expect": "block" },
+    { "id": "a-006", "kind": "attack", "from": "guest", "to": "10.10.30.10", "proto": "tcp", "port": 22, "expect": "block" },
+    { "id": "a-007", "kind": "attack", "from": "iot-dev", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-008", "kind": "attack", "from": "pc", "to": "10.10.30.10", "proto": "tcp", "port": 80, "expect": "block" },
+    { "id": "a-009", "kind": "attack", "from": "iot-dev", "to": "10.10.20.10", "proto": "tcp", "port": 1883, "expect": "block" },
+    { "id": "a-010", "kind": "attack", "from": "pc", "to": "10.10.10.10", "proto": "tcp", "port": 22, "expect": "block" },
+    { "id": "a-011", "kind": "attack", "from": "guest", "to": "10.10.10.10", "proto": "tcp", "port": 80, "expect": "block" }
+  ]
+}

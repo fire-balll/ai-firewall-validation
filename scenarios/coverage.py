@@ -22,12 +22,11 @@ prober 가 실행 실패로 끝나므로, UDP 프로브는 에코 서비스(comm
 state 유형(응답 트래픽 누락)은 IR 이 정답과 같아 시뮬레이터로 만들 수 없으므로 여기서 다루지 않는다.
 equivalent 로도 세지 않는다. 동적 검증만 잡는 오류로 따로 센다 (mutations/README.md).
 
-probe_gaps 는 프로브 빈틈을 찾는 진단용 점검이다 (#74). 정답 룰의 src·dst 망을 그 망의 랩 호스트 한 대(/32)로
-좁힌 변형 중, 랩 프로브로는 드러나는데 시나리오 프로브로는 안 드러나는 것을 적는다. "좁히기"는 오류 주입 유형이
-아니므로(mutations/README.md 는 바꾸지 않는다) mutants·caught 와 동적 추가 탐지율 분모에 넣지 않는다.
+narrow 유형은 src·dst 망을 그 망 안의 랩 호스트 한 대(/32)로 좁힌다. 망마다 한 호스트에서만 프로브를 보내면
+드러나지 않으므로, 같은 망의 다른 호스트에서도 프로브가 있어야 한다 (#74).
 
 출력: {"scenarios": [{"id", "mutants", "caught", "equivalent": [...], "uncovered": [...], "missed": [...],
-                     "suggest": [...], "probe_gaps": [...]}]}
+                     "suggest": [...]}]}
 사용: coverage.py [scenarios/req-*.json ...]
 """
 
@@ -98,7 +97,7 @@ def overlaps(a, b):
     return alo <= bhi and blo <= ahi
 
 
-def mutants(rules):
+def mutants(rules, host_ips):
     """(이름, 변형 룰 목록). 한 변형에는 오류 하나만 넣는다."""
     def edit(i, **kw):
         m = copy.deepcopy(rules)
@@ -127,6 +126,12 @@ def mutants(rules):
             yield f"swap:{rid}", edit(i, src=r["dst"], dst=r["src"])
         yield f"action:{rid}", edit(i, action="drop" if r["action"] == "accept" else "accept")
         yield f"missing:{rid}", [x for j, x in enumerate(rules) if j != i]
+        for f in ("src", "dst"):
+            if r[f] == "any" or ipaddress.ip_network(r[f]).prefixlen == 32:
+                continue
+            for name, ip in sorted(host_ips.items()):
+                if ipaddress.ip_address(ip) in ipaddress.ip_network(r[f]):
+                    yield f"narrow:{rid}.{f}->{name}", edit(i, **{f: f"{ip}/32"})
     ordered = sorted(rules, key=lambda r: (r["priority"], r["id"]))
     for a, b in zip(ordered, ordered[1:]):
         m = copy.deepcopy(rules)
@@ -137,31 +142,6 @@ def mutants(rules):
                 x["priority"] = a["priority"]
         equivalent = a["action"] == b["action"] or not overlaps(a, b)
         yield f"order:{a['id']}<->{b['id']}" + ("=" if equivalent else ""), m
-
-
-def narrowed(rules, host_ips):
-    """(이름, 변형 룰 목록). src·dst 망을 그 안의 랩 호스트 한 대로 좁힌다. 오류 주입 유형이 아닌 진단용."""
-    for i, r in enumerate(rules):
-        for f in ("src", "dst"):
-            if r[f] == "any" or ipaddress.ip_network(r[f]).prefixlen == 32:
-                continue
-            for name, ip in sorted(host_ips.items()):
-                if ipaddress.ip_address(ip) in ipaddress.ip_network(r[f]):
-                    m = copy.deepcopy(rules)
-                    m[i][f] = f"{ip}/32"
-                    yield f"narrow:{r['id']}.{f}->{name}", m
-
-
-def probe_gaps(gold, probes, universe, host_ips, gold_s, gold_u):
-    """시나리오 프로브로 안 드러나지만 랩 프로브로 드러나는 좁히기 변형과, 그것을 드러내는 랩 프로브 하나."""
-    out = []
-    for name, m in narrowed(gold, host_ips):
-        if verdicts(m, probes, host_ips) != gold_s:
-            continue
-        diff = [k for k, v in enumerate(verdicts(m, universe, host_ips)) if v != gold_u[k]]
-        if diff:
-            out.append({"name": name, "probe": dict(universe[diff[0]], expect=gold_u[diff[0]])})
-    return out
 
 
 def verdicts(rules, probes, host_ips):
@@ -185,7 +165,7 @@ def analyze(scenario, host_ips):
     gold_s, gold_u = verdicts(gold, probes, host_ips), verdicts(gold, universe, host_ips)
 
     caught, equivalent, uncovered, missed = 0, [], {}, []
-    for name, m in mutants(gold):
+    for name, m in mutants(gold, host_ips):
         if name.endswith("="):
             equivalent.append(name[:-1])
             continue
@@ -211,7 +191,7 @@ def analyze(scenario, host_ips):
 
     return {"id": scenario["id"], "mutants": caught + len(equivalent) + len(uncovered) + len(missed),
             "caught": caught, "equivalent": equivalent, "uncovered": sorted(uncovered), "missed": missed,
-            "suggest": suggest, "probe_gaps": probe_gaps(gold, probes, universe, host_ips, gold_s, gold_u)}
+            "suggest": suggest}
 
 
 def main():

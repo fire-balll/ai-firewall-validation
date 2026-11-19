@@ -1,0 +1,20 @@
+{
+  "scenario": "req-015",
+  "candidate": "req-015-qwen2.5-14b-s2",
+  "round": 1,
+  "source": {
+    "batch_id": "20261112-162424",
+    "rep": 1,
+    "commit": "672a8a0f8fc3e350a3cf94279ffebc14acac2752"
+  },
+  "stage": "approval",
+  "validation": {
+    "ok": true,
+    "risk": "high",
+    "errors": [],
+    "reasons": [
+      "r-004: shadowing - r-004(drop) 의 범위가 앞 룰 r-003(accept) 에 모두 가려 r-004 는 적용되지 않는다 (과허용 위험)"
+    ]
+  },
+  "failed_probes": []
+}

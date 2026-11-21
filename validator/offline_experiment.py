@@ -25,6 +25,36 @@ def read_input(path):
     return json.loads(raw.decode('utf-8')), hashlib.sha256(raw).hexdigest()
 
 
+def review_workload(records):
+    """B counts all generated candidates; C counts static-pass high candidates.
+
+    Count IR rules array entries, including rejected inputs, not valid nft rules.
+    Missing counts abort accounting rather than silently reducing the B baseline.
+    """
+    rounds = {}
+    for record in records:
+        if record['kind'] != 'generated':
+            continue
+        key = str(record['meta']['round'])
+        group = rounds.setdefault(key, dict(candidate_files=0, rejected_files=0,
+                                            B_files=0, C_files=0, B_rules=0, C_rules=0))
+        group['candidate_files'] += 1
+        if not record['validation']['ok']:
+            group['rejected_files'] += 1
+        count = record['rule_count']
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+            raise ValueError('missing or invalid rule_count')
+        group['B_files'] += 1
+        group['B_rules'] += count
+        if record['validation']['ok'] and record['validation']['risk'] == 'high':
+            group['C_files'] += 1
+            group['C_rules'] += count
+    for group in rounds.values():
+        b = group['B_rules']
+        group['rule_reduction_fraction'] = (b-group['C_rules'])/b if b else None
+    return rounds
+
+
 def measure(root=ROOT):
     root = Path(root)
     scenarios = sorted((root / 'scenarios').glob('req-*.json'))
@@ -59,6 +89,7 @@ def measure(root=ROOT):
             records.append({'kind': kind, 'scenario': scenario,
                             'path': str(path.relative_to(root)), 'sha256': digest,
                             'stateful': stateful_for(path), 'meta': meta,
+                            'rule_count': len(value['rules']) if isinstance(value, dict) and isinstance(value.get('rules'), list) else None,
                             'meta_sha256': meta_digest, 'validation': result,
                             'gold_comparison': comparison})
     first = [r for r in records if r['kind'] == 'generated' and r['meta']['round'] == 1]
@@ -79,7 +110,9 @@ def measure(root=ROOT):
                          'initial_packet_policy_changed': changed}
     return {'scope': 'offline static measurements; gold reference, not live current; no dynamic result',
             'scenario_count': len(scenarios), 'scenario_inputs': scenario_inputs,
-            'summary': summary, 'review_file_count': {'B': b, 'C': c,
+            'summary': summary, 'review_rule_count': review_workload(records),
+            'review_rule_count_scope': 'all generated rules array entries by round, including static rejects; C is static-pass high only; not human time or dynamic safety',
+            'review_file_count': {'B': b, 'C': c,
                 'reduction_fraction': (b-c)/b if b else None,
                 'scope': 'round1 generated candidate files; not rule count or human time'},
             'records': records}

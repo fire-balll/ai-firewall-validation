@@ -15,11 +15,12 @@ block 은 fw 에서 대상이 살아 있는지 확인한 뒤에만 낸다(tcp·i
 종료 코드·메시지는 lab/Containerfile 이미지(debian bookworm netcat-openbsd, iputils-ping, curl 7.88,
 nmap 7.93, hping3 3.0.0-alpha-2, python3 3.11)에서 확인했다.
 
+결과에는 프로브의 set(시나리오 프로브 v2 구분, #74. 없으면 "v1")을 그대로 남긴다. 판정에는 쓰지 않는다.
 결과마다 판정 근거(evidence, 예: "nc: Connection refused (방화벽 통과, 포트 닫힘)")를 남긴다.
 실행 실패 메시지는 원인을 분류한다: 컨테이너 없음·꺼짐(125), 명령 실행 권한 없음(126), 명령 없음(127),
 podman exec 시간 초과, 판정할 수 없는 출력, 대상 응답 없음.
 
-출력: {"results": [{"id", "kind", "expect", "observed", "pass", "evidence"}...]}
+출력: {"results": [{"id", "kind", "set", "expect", "observed", "pass", "evidence"}...]}
 사용: probe.py scenarios/req-001.json > out/probe.json
 """
 
@@ -345,7 +346,7 @@ def run_probe(p):
                              "응답하지 않아 차단으로 판정할 수 없음 (대상 컨테이너가 꺼졌는지 확인할 것)")
         evidence += f", {how}"
     return {
-        "id": p["id"], "kind": p["kind"], "expect": p["expect"],
+        "id": p["id"], "kind": p["kind"], "set": p.get("set", "v1"), "expect": p["expect"],
         "observed": observed, "pass": observed == p["expect"], "evidence": evidence,
     }
 

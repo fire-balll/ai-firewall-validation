@@ -10,7 +10,7 @@ TODO: 기존 룰셋과의 충돌 검사
   ok=false 는 후보 룰셋이 틀렸을 때만 낸다(JSON·룰셋 구조·스키마·포트·nft 문법 오류).
   검사 도구가 고장 나면(sudo·podman 실행 실패·시간 초과, nft 실행 완료 마커 없음) 결과 JSON 을 내지 않고
   종료코드 2 로 끝낸다. 분석기 내부 예외도 결과로 바꾸지 않고 그대로 올린다(비0 종료).
-사용: validate.py out/candidate.json [--nft-check] > out/validation.json
+사용: validate.py out/candidate.json [--nft-check] [--stateful yes|no] > out/validation.json
 """
 
 import argparse
@@ -69,13 +69,13 @@ def parse_nft_rc(res):
     return int(value) if value.isascii() and value.isdigit() else None
 
 
-def nft_check(ruleset):
+def nft_check(ruleset, stateful=True):
     # 룰셋은 UTF-8 bytes 로 넘긴다(text 모드면 Windows 에서 \n 이 \r\n 으로 바뀌어 nft 가 문법 오류로 본다).
     # 실행 실패를 후보 오류와 구분해야 해서 common.lab.exec_in 대신 같은 PODMAN·FW 설정으로 직접 부른다.
     try:
         res = subprocess.run(
             [*PODMAN, "exec", "-i", FW, "sh", "-c", NFT_CHECK_SCRIPT],
-            input=to_nft(ruleset).encode("utf-8"), capture_output=True, timeout=30,
+            input=to_nft(ruleset, stateful=stateful).encode("utf-8"), capture_output=True, timeout=30,
         )
     except (OSError, subprocess.SubprocessError) as ex:  # 검사를 못 한 것이지 후보가 틀린 것이 아니다
         raise ToolError(f"nft -c 실행 실패: {type(ex).__name__}: {ex}") from ex
@@ -104,12 +104,12 @@ def input_errors(ruleset):
         return [f"입력 구조 오류(룰셋 객체와 rules 배열이 아님): {type(ex).__name__}: {ex}"]
 
 
-def validate(ruleset, nft=False):
+def validate(ruleset, nft=False, stateful=True):
     errors = input_errors(ruleset)
     if not errors:
         errors = port_errors(ruleset)
     if not errors and nft:
-        errors += nft_check(ruleset)
+        errors += nft_check(ruleset, stateful=stateful)
 
     out = rejected(errors)
     if errors:
@@ -126,6 +126,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("ruleset")
     ap.add_argument("--nft-check", action="store_true", help="fw 컨테이너에서 nft -c 로 문법 검사")
+    ap.add_argument("--stateful", choices=("yes", "no"), default="yes",
+                    help="nft 검사 상태 추적 모드; pipeline이 적용과 같은 값을 전달")
     args = ap.parse_args()
 
     # JSON 문법·인코딩 오류는 후보가 틀린 것이므로 ok=false 로 낸다. 파일 없음(OSError)은 실행 실패로 둔다
@@ -135,7 +137,7 @@ def main():
         out = rejected([f"입력 JSON 파싱 실패: {type(ex).__name__}: {ex}"])
     else:
         try:
-            out = validate(ruleset, nft=args.nft_check)
+            out = validate(ruleset, nft=args.nft_check, stateful=args.stateful == "yes")
         except ToolError as ex:  # 결과 JSON 을 쓰지 않아야 pipeline 이 판정으로 기록하지 않는다
             print(f"validate.py: 검사 도구 실패: {ex}", file=sys.stderr)
             sys.exit(TOOL_FAILURE_EXIT)

@@ -33,7 +33,21 @@ else
   python3 generator/generate.py "${gen_args[@]}" > "$OUT/candidate.json"
 fi
 
-python3 validator/validate.py "$OUT/candidate.json" --nft-check > "$OUT/validation.json"
+# 모드 판단은 common.ir.stateful_for 한 곳에서 한다.
+# 종료 코드가 아닌 출력으로 받아 Python 실패와 stateless 결과를 구분한다.
+deploy_args=()
+validate_mode=yes
+if [[ -n "$CANDIDATE" ]]; then
+  mode=$(python3 -c 'import sys; from common.ir import stateful_for; print("stateful" if stateful_for(sys.argv[1]) else "stateless")' "$CANDIDATE" | tr -d '\r')
+  if [[ "$mode" == stateless ]]; then
+    validate_mode=no
+    deploy_args+=(--stateless)
+  elif [[ "$mode" != stateful ]]; then
+    echo "상태 추적 판단 실패: '$mode'" >&2
+    exit 1
+  fi
+fi
+python3 validator/validate.py "$OUT/candidate.json" --nft-check --stateful "$validate_mode" > "$OUT/validation.json"
 ok=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["ok"])' "$OUT/validation.json")
 risk=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["risk"])' "$OUT/validation.json")
 
@@ -62,20 +76,7 @@ if [[ "$risk" == high ]]; then
   approved=yes
 fi
 
-# candidate.json 으로 복사하면 파일명이 사라지므로, 상태 추적 여부는 원래 파일명으로 여기서 넘긴다.
-# 판단 규칙은 common.ir.stateful_for 한 곳에만 둔다
-# 판단 결과는 종료 코드가 아니라 출력으로 받는다. 파이썬이 실행에 실패하면(모듈 없음 등)
-# 종료 코드만으로는 "stateless" 와 구분되지 않기 때문이다. 실패하면 set -e·ERR trap 으로 실행 실패(1)
-deploy_args=()
-if [[ -n "$CANDIDATE" ]]; then
-  mode=$(python3 -c 'import sys; from common.ir import stateful_for; print("stateful" if stateful_for(sys.argv[1]) else "stateless")' "$CANDIDATE")
-  if [[ "$mode" == stateless ]]; then
-    deploy_args+=(--stateless)
-  elif [[ "$mode" != stateful ]]; then
-    echo "상태 추적 판단 실패: '$mode'" >&2
-    exit 1
-  fi
-fi
+# 위에서 보존한 원본 모드로 검사와 동일하게 적용한다.
 if ! python3 deployer/deploy.py "$OUT/candidate.json" --scenario "$SCENARIO" --watch "$WATCH" "${deploy_args[@]+"${deploy_args[@]}"}" > "$OUT/deploy.json"; then
   # 실행 실패는 실험 결과가 아니므로 CSV 에 기록하지 않는다
   echo "적용 중 실행 실패: 원복 후 중단 ($OUT/deploy.json)" >&2

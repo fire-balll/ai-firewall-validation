@@ -9,8 +9,10 @@ from unittest import mock
 
 from deployer import deploy
 
-PASS = {"results": [{"id": "n-001", "pass": True}]}
-FAIL = {"results": [{"id": "n-001", "pass": False}]}
+PASS = {"results": [{"id": "n-001", "kind": "normal", "expect": "allow",
+                     "observed": "allow", "pass": True}]}
+FAIL = {"results": [{"id": "n-001", "kind": "normal", "expect": "allow",
+                     "observed": "block", "pass": False}]}
 
 
 class DeployFlowTest(unittest.TestCase):
@@ -27,7 +29,9 @@ class DeployFlowTest(unittest.TestCase):
         patches = {
             "require_lab": mock.DEFAULT, "snapshot": mock.Mock(return_value="SAVED"),
             "nft_apply": mock.Mock(side_effect=nft_apply),
-            "probe": mock.Mock(side_effect=list(probes)), "load_json": mock.Mock(return_value={"rules": []}),
+            "probe": mock.Mock(side_effect=list(probes)), "load_json": mock.Mock(side_effect=lambda path: {
+                "probes": [{"id": "n-001", "kind": "normal", "expect": "allow"}]
+            } if path == "s.json" else {"rules": []}),
             "to_nft": mock.Mock(return_value="CANDIDATE"),
         }
         dm = mock.Mock()

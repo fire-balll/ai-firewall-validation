@@ -27,6 +27,12 @@ validate.py candidate.json [--nft-check]
 
 podman 종료코드만 보지 않는 이유: 기본 `PODMAN="sudo podman"` 에서 sudo 가 비밀번호를 요구하거나 podman 이 일반 오류를 내면 종료코드가 nft 문법 오류와 같은 1 이다. 마커는 컨테이너 안에서 nft 가 끝난 뒤에만 찍히므로, 마커가 있을 때만 nft 의 판정으로 본다. `pipeline/run.sh` 는 `set -e` 라 validate 가 비0 으로 끝나면 `record` 전에 멈추므로, 도구 고장은 CSV 에 기록되지 않는다.
 
+## 동적 실패와 고위험의 구분
+
+[10/29 팀 결정](../docs/meetings/2026-10-29.md#3-주요-결정-사항)과 [통합 담당의 합의](https://github.com/fire-balll/ai-firewall-validation/pull/37#issuecomment-6408802630)에 따라 정상 트래픽 차단은 사람이 승인하면 적용하는 `risk=high`가 아니라 **동적 검증 실패·롤백**이다. 정적 위험도는 위의 범위·룰 간 이상 기준으로 판정한다. 공격 통과 등 프로브의 실제 실패도 배포 감시 경로에서 처리하며, 이 구분은 정적 `validate.py`가 동적 결과를 관측한다는 뜻이 아니다.
+
+도구 실행 실패·불완전한 관측은 정책 오류를 관측한 결과와 구분하여 `aborted`로 남기고, 정상 통과·공격 차단율의 관측값으로 대입하지 않는다. 이 문서는 합의를 반영하며 기존 판정·배포 동작을 바꾸지 않는다.
+
 ## 룰 간 이상 4종
 
 순서는 `to_nft` 와 같다: priority 오름차순(같으면 id 순), first-match, 기본 정책 drop. "앞"은 먼저 매칭되는 룰이다.

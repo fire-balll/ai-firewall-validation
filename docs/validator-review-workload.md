@@ -36,3 +36,56 @@ python -m unittest tests.test_review_workload tests.test_validator_offline_exper
 ## #82에 제안할 연결 형식
 
 별도 `round,B_files,C_files,B_rules,C_rules,rejected_files,source_commit,source_dirty` 표를 제안합니다. JSON의 라운드별 건수와 최상위 provenance를 명시적으로 연결해야 합니다. CLI는 JSON만 출력하며 CSV export/배치 join은 구현하지 않습니다. `final.py`의 배치별 행에 합치려면 manifest에 실제 포함된 후보·라운드만 골라 같은 키로 일치 검증한 뒤 연결해야 합니다. 이 변경은 전체 파일 집계이며 배치별 join 구현은 포함하지 않습니다. `eval/` 담당 강윤서(@yxxunseo)에게 이 구분을 확인받기 전 임의로 `final.py`를 고치거나 CSV 열을 채우지 않습니다.
+
+
+## 정적 검증과 동적 검증 결과 해석
+
+오류 주입 배치 결과는 main `8e5d380e4b57f7ce1b9984a9cc0a0fcbc6dbc70b`에 보관된 manifest·CSV를 기준으로 집계했다.
+
+### 1. 정적 판정이 해 주는 일
+
+발표문: “제가 맡은 검증기는 AI가 만든 JSON 룰을 받아 문법·입력 구조와 허용 범위, 룰 간 이상 네 종류를 확인합니다. `ok=false`는 후보 반려, `ok=true/risk=high`는 사람 승인 대상입니다. high는 정답과 비교한 오류 라벨이 아니라 고정된 범위·충돌 기준입니다. 정상 통신 차단은 승인으로 넘기는 high가 아니라 동적 검증 실패·롤백으로 처리합니다.”
+
+예시: req-004의 좁은 drop과 넓은 accept는 일부만 겹쳐 correlation이다. 먼저 오는 룰을 accept로 바꾸면 과허용 가능성 때문에 high가 된다. 이 사례를 모두 shadowing이라고 부르지 않는다. [검증기 판정·예시](../validator/README.md#룰-간-이상-4종), [합의 원문](https://github.com/fire-balll/ai-firewall-validation/pull/37#issuecomment-6408802630).
+
+### 2. 정적만으로 놓친 오류는 무엇이었나
+
+원자료: `eval/results/batch-20261112-165451.json`과 `eval/results/results.csv`. 실행 commit `672a8a0f8fc3e350a3cf94279ffebc14acac2752`. manifest의 `(scenario,candidate,rep)`를 CSV의 `(scenario,generator,rep)`와 연결하며 generator는 `file:<candidate>`이다. 배치·commit을 함께 확인했다. 후보마다 rep 1·2·3이 있고 세 회차의 상태가 같아 아래는 **후보 파일 수**로 압축했다.
+
+| 오류 주입 유형 | 고위험→승인 거부 | 정적 통과→동적 롤백 | 후보 합계 |
+|---|---:|---:|---:|
+| action | 3 | 1 | 4 |
+| extra | 1 | 1 | 2 |
+| missing | 0 | 4 | 4 |
+| narrow | 0 | 3 | 3 |
+| order | 4 | 0 | 4 |
+| port | 0 | 4 | 4 |
+| port-any | 2 | 0 | 2 |
+| proto | 3 | 1 | 4 |
+| range | 0 | 3 | 3 |
+| state | 0 | 21 | 21 |
+| swap | 0 | 2 | 2 |
+| widen | 3 | 4 | 7 |
+| 합계 | 16 | 44 | 60 |
+
+발표문: “60개 오류 주입 후보를 각각 세 번씩, 총 180회 실행했습니다. 후보 기준으로 16개는 high로 승인 거부됐고 44개는 정적 low를 통과한 뒤 롤백됐습니다. 추가로 잡힌 44개 가운데 21개는 응답 상태 추적 누락인 state입니다. 나머지 23개는 missing·port·range 등 다른 오류 유형이었습니다. 따라서 정적 검증을 통과했다는 것만으로 실제 통신이 맞는다고 볼 수 없습니다.”
+
+해석: 후보 수 44와 반복 실행 수 132를 혼용하지 않는다. 16개는 정적 반려가 아니라 **유효한 high 후보의 승인 거부**이며 동적 프로브 관측값이 없다. 이 배치의 동적 추가 탐지 대상 44개는 모두 롤백됐지만, 시나리오 프로브로 드러나도록 구성한 오류 주입 집합에 대한 결과다. 임의의 새 오류나 운영망 탐지율로 확장하지 않는다. 이 유형 표는 보관 manifest·CSV의 독립 재대조이며 VM 원 `deploy.json`의 독립 재검증과 구분한다. [팀 분석](eval-results.md#결과-분석), [VM 소유자의 원 out 검증](https://github.com/fire-balll/ai-firewall-validation/pull/82#pullrequestreview-6052046843).
+
+### 3. 검토량은 줄었지만 안전성은 어디까지 말할 수 있나
+
+발표문: “1라운드 후보 63개에서 사람이 볼 대상으로 분류한 파일은 9개, 룰 항목은 216개에서 40개로 줄었습니다. 파일 감소는 85.71%, 룰 감소는 81.48%입니다. 이것은 검토 대상량이며 실제 사람의 검토시간이나 판단 정확도를 측정한 값은 아닙니다.”
+
+배치별 실제 후보를 연결한 [별도 대조 PR #93](https://github.com/fire-balll/ai-firewall-validation/pull/93)은 11/12 AI 후보 66회(1라운드 63+2라운드 3), 11/19 21회(1라운드 12+2라운드 9)를 구분한다. 고유 후보는 75개지만 실행은 87회다. #93은 미병합 분석으로 표시하며 그 표를 B와 C를 각각 운용한 안전성 실험으로 바꾸어 해석하지 않는다.
+
+| 결과를 읽을 사례 | 원자료에서 확인한 내용 | 발표에서 내릴 해석 |
+|---|---|---|
+| 11/12 AI 적용 유지 54회 | 1라운드 51+2라운드 3; 이 중 정답과 다른 정책 4회 | 기존 프로브를 모두 통과해도 정책 차이가 남을 수 있음 |
+| req-013 s1·s2, req-006 s3-r2 | 기존 v1에는 없는 경로; v2 시뮬레이터에서는 n-004 실패 | v2의 추가 관측 가능성. 실제 v2 랩 수치는 별도 확인 |
+| req-019 s2 | 서버 /32 대신 서버 망 /24 과허용 18; v2도 통과 | 랩에 해당 목적지 서비스가 없으면 정책 차이를 관측할 수 없음 |
+
+위의 과허용 18은 의미 비교의 영역 셀 수이며 실제 공격 패킷 18개라는 뜻이 아니다. `policy_diff`는 승인 거부·롤백까지 포함한 열이므로 적용 유지된 정책 차이 수와 구별한다. [동적 분석의 사례 표](eval-results.md#결과-분석), [#82 원문 주의사항](https://github.com/fire-balll/ai-firewall-validation/pull/82#pullrequestreview-6052046843), [#84의 시뮬레이터/실배치 구분](https://github.com/fire-balll/ai-firewall-validation/pull/84#issuecomment-7162077623).
+
+### 4. 결론
+
+발표문: “이 실험은 정적 선별과 동적 프로브가 서로 다른 오류를 걸러낸다는 것을 보여 줍니다. 정적 선별은 검토 대상량을 줄였고, 동적 검증은 상태 추적을 포함한 44개 오류 후보의 실패를 추가로 관측했습니다. 동시에 프로브가 없는 경로와 랩 밖의 호스트는 보장 범위에 남습니다. 실제 사람 전수검토 B와 선별검토 C의 운용 안전성 동등성, 검토시간 절감, 피드백 재생성의 인과효과는 별도 검증이 필요합니다.”

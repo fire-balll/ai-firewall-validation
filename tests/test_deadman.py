@@ -5,6 +5,7 @@
 """
 
 import os
+import shutil
 import stat
 import tempfile
 import time
@@ -37,21 +38,29 @@ esac
 
 class DeadmanTest(unittest.TestCase):
     def setUp(self):
-        tmp = tempfile.TemporaryDirectory()
+        tmp = tempfile.TemporaryDirectory(dir=os.environ.get('TMPDIR'))
         self.addCleanup(tmp.cleanup)
         self.tmp = Path(tmp.name)
         bin_ = self.tmp / "bin"
         bin_.mkdir()
         for name, body in (("podman", FAKE_PODMAN), ("nft", FAKE_NFT)):
             f = bin_ / name
-            f.write_text(body)
+            f.write_text(body, encoding='utf-8', newline='\n')
             f.chmod(f.stat().st_mode | stat.S_IEXEC)
         self.state = self.tmp / "ruleset"
         self.state.write_text("candidate\n")
         self.dir = self.tmp / "deadman"
-        env = {"PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}", "FAKE_NFT_STATE": str(self.state),
-               "FW_DEADMAN_DIR": str(self.dir)}
-        patches = [mock.patch.dict(os.environ, env), mock.patch.object(lab, "PODMAN", [str(bin_ / "podman")])]
+        env = {"PATH": f"{bin_}{os.pathsep}{os.environ['PATH']}", "FAKE_NFT_STATE": self.state.as_posix(),
+               "FW_DEADMAN_DIR": self.dir.as_posix()}
+        # Windows CreateProcess does not execute a shebang script. Keep this
+        # adaptation in the test fixture; real Podman/deadman code is unchanged.
+        podman = [(bin_ / 'podman').as_posix()]
+        if os.name == 'nt':
+            bash = shutil.which('bash')
+            if not bash:
+                self.fail('Windows shell fixture requires bash (not a skipped test)')
+            podman.insert(0, bash)
+        patches = [mock.patch.dict(os.environ, env), mock.patch.object(lab, "PODMAN", podman)]
         for p in patches:
             p.start()
             self.addCleanup(p.stop)

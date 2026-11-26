@@ -1,0 +1,5 @@
+﻿batch_id,execution_commit,round,static_source_main,candidate_files,B_files,C_files,B_rules,C_rules,rejected_files,rule_reduction_fraction,manifest_runs,applied,rolled_back,rejected_validation,rejected_approval,aborted,normal_pass_rate_mean,normal_pass_rate_n,attack_block_rate_mean,attack_block_rate_n,semantic_match_mean,semantic_match_n,detect_s_mean,detect_s_n,mttr_s_mean,mttr_s_n,policy_diff_runs
+20261112-180000,672a8a0f8fc3e350a3cf94279ffebc14acac2752,1,8e5d380e4b57f7ce1b9984a9cc0a0fcbc6dbc70b,63,63,9,216,40,0,0.8148148148148148,63,51,3,0,9,0,0.9868,54,1.0,54,0.9994,63,41.7177,3,0.3967,3,15
+20261112-180000,672a8a0f8fc3e350a3cf94279ffebc14acac2752,2,8e5d380e4b57f7ce1b9984a9cc0a0fcbc6dbc70b,3,3,0,16,0,0,1.0,3,3,0,0,0,0,1.0,3,1.0,3,0.9996,3,,0,,0,1
+20261119-114413,910dc8e608b49d7fba50bfb0742d48cadd4d913b,1,8e5d380e4b57f7ce1b9984a9cc0a0fcbc6dbc70b,12,12,6,60,27,0,0.55,12,3,3,0,6,0,0.8808,6,1.0,6,0.998,12,41.8543,3,0.4163,3,9
+20261119-114413,910dc8e608b49d7fba50bfb0742d48cadd4d913b,2,8e5d380e4b57f7ce1b9984a9cc0a0fcbc6dbc70b,9,9,3,51,16,2,0.6862745098039216,9,3,1,2,3,0,0.9643,4,1.0,4,0.9996,7,39.994,1,0.411,1,4

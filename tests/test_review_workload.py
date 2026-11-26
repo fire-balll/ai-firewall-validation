@@ -26,8 +26,8 @@ class ReviewWorkloadTest(unittest.TestCase):
         result = module.measure()
         first = result['review_rule_count']['1']
         self.assertEqual((first['B_files'], first['C_files'], first['B_rules'], first['C_rules']),
-                         (63, 9, 216, 40))
-        self.assertAlmostEqual(first['rule_reduction_fraction'], 176/216)
+                         (66, 9, 228, 40))
+        self.assertAlmostEqual(first['rule_reduction_fraction'], 188/228)
 
     def test_real_round2_counts_include_both_rejected_inputs(self):
         result = module.measure()

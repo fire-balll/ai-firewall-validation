@@ -116,7 +116,8 @@ def _managed_probe(scenario_path, timeout=None):
 
 def complete_probe(result, expected):
     """Require one observed row per scenario probe on legacy and managed paths."""
-    if not isinstance(result, dict) or not isinstance(result.get('results'), list):
+    if (not isinstance(result, dict) or set(result) != {'results'} or
+            not isinstance(result.get('results'), list)):
         raise RuntimeError('incomplete probe observation')
     rows = result['results']
     if len(rows) != len(expected):

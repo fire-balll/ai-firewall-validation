@@ -1,0 +1,163 @@
+{
+  "commit": "8f7e03738fe8d864bfc9871b5e633c58279d1e4c",
+  "dirty": false,
+  "args": {
+    "scenarios": "scenarios/req-*.json",
+    "candidates": "gold",
+    "reps": 1,
+    "watch": 10,
+    "approve": "no",
+    "allow_dirty": false
+  },
+  "started": "2026-11-25T13:52:51",
+  "finished": "2026-11-25T14:01:51",
+  "runs": [
+    {
+      "scenario": "req-001",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-001-gold-r1"
+    },
+    {
+      "scenario": "req-002",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-002-gold-r1"
+    },
+    {
+      "scenario": "req-003",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-003-gold-r1"
+    },
+    {
+      "scenario": "req-004",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-004-gold-r1"
+    },
+    {
+      "scenario": "req-005",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-005-gold-r1"
+    },
+    {
+      "scenario": "req-006",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-006-gold-r1"
+    },
+    {
+      "scenario": "req-007",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-007-gold-r1"
+    },
+    {
+      "scenario": "req-008",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-008-gold-r1"
+    },
+    {
+      "scenario": "req-009",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-009-gold-r1"
+    },
+    {
+      "scenario": "req-010",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-010-gold-r1"
+    },
+    {
+      "scenario": "req-011",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-011-gold-r1"
+    },
+    {
+      "scenario": "req-012",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-012-gold-r1"
+    },
+    {
+      "scenario": "req-013",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-013-gold-r1"
+    },
+    {
+      "scenario": "req-014",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-014-gold-r1"
+    },
+    {
+      "scenario": "req-015",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-015-gold-r1"
+    },
+    {
+      "scenario": "req-016",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-016-gold-r1"
+    },
+    {
+      "scenario": "req-017",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-017-gold-r1"
+    },
+    {
+      "scenario": "req-018",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-018-gold-r1"
+    },
+    {
+      "scenario": "req-019",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-019-gold-r1"
+    },
+    {
+      "scenario": "req-020",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-020-gold-r1"
+    },
+    {
+      "scenario": "req-021",
+      "candidate": "gold",
+      "rep": 1,
+      "status": "applied",
+      "out": "out/batch-20261125-135251/req-021-gold-r1"
+    }
+  ]
+}

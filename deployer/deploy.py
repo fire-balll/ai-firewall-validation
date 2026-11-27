@@ -13,7 +13,7 @@ deployer 가 강제 종료돼도 후보 룰이 남지 않도록, 적용 전에 f
 
 출력: {"stateful", "applied", "rolled_back", "aborted", "error", "t_apply", "t_detect", "t_restored", "detect_s",
        "mttr_s", "probe", "deadman", "recovered"}
-  aborted=true 이면 실행 실패(프로브 예외 등)로 원복하고 종료 코드 1. 이때 detect_s·mttr_s 는 비운다(결과가 아니므로).
+  aborted=true 이면 실행 실패(관측 불완전·프로브 예외·timeout·예산 부족 등)로 원복하고 종료 코드 1. 이때 detect_s·mttr_s 는 비운다(결과가 아니므로).
     rolled_back 은 "프로브 실패를 보고 되돌렸는가" 그대로 남긴다. 그래서 aborted 와 rolled_back 이 함께 true 일 수 있다
     (롤백 뒤 타이머가 이미 만료돼 있던 경우). 복구 시간을 모을 때는 aborted 를 먼저 거른다
   감시 도중 타이머가 먼저 만료되면 그 뒤 프로브는 원래 룰셋을 본 것이므로 결과로 내지 않고 aborted
@@ -47,18 +47,59 @@ def snapshot():
     return "flush ruleset\n" + res.stdout
 
 
-def probe(scenario_path):
+# lab 후검사 30s + snapshot 복원 30s + disarm 30s + scheduling 여유 1s.
+# 직접 자식의 실행 예산만 제한하며 POSIX 자손 정리를 보장하지 않는다.
+PROBE_RESTORE_RESERVE = 91
+
+
+def probe(scenario_path, *, deadman_deadline=None):
     # 프로브 전후로 랩이 온전해야 결과를 믿을 수 있다 (도중에 꺼져도 거짓 block 이 나온다)
+    if deadman_deadline is not None and deadman_deadline - time.monotonic() <= PROBE_RESTORE_RESERVE:
+        raise RuntimeError("probe budget exhausted before lab check")
     require_lab()
+    timeout = 300
+    if deadman_deadline is not None:
+        timeout = min(timeout, deadman_deadline - time.monotonic() - PROBE_RESTORE_RESERVE)
+        if timeout <= 0:
+            raise RuntimeError("probe budget exhausted before child launch")
     res = subprocess.run(
         [sys.executable, str(ROOT / "prober" / "probe.py"), scenario_path],
-        capture_output=True, text=True,
+        capture_output=True, text=True, timeout=timeout,
     )
     if res.returncode != 0:
         lines = res.stderr.strip().splitlines()
         raise RuntimeError(f"prober 실패 (exit {res.returncode}): {lines[-1] if lines else ''}")
     require_lab()
     return json.loads(res.stdout)
+
+
+def complete_probe(result, expected):
+    """Require one consistent observation per scenario probe before committing."""
+    if not isinstance(result, dict) or not isinstance(result.get('results'), list):
+        raise RuntimeError('incomplete probe observation')
+    rows = result['results']
+    if len(rows) != len(expected):
+        raise RuntimeError('incomplete probe observation')
+    seen = set()
+    required = {'id', 'kind', 'expect', 'observed', 'pass'}
+    for row in rows:
+        if (not isinstance(row, dict) or not required.issubset(row) or
+                not set(row).issubset(required | {'evidence', 'set'}) or
+                ('evidence' in row and not isinstance(row['evidence'], str))):
+            raise RuntimeError('incomplete probe observation')
+        ident = row['id']
+        if not isinstance(ident, str) or ident not in expected or ident in seen:
+            raise RuntimeError('incomplete probe observation')
+        seen.add(ident)
+        reference = expected[ident]
+        if (row['kind'] != reference['kind'] or row['expect'] != reference['expect'] or
+                row.get('set', 'v1') not in ('v1', 'v2') or
+                row.get('set', 'v1') != reference.get('set', 'v1') or
+                row['observed'] not in ('allow', 'block') or
+                type(row['pass']) is not bool or
+                row['pass'] != (row['observed'] == row['expect'])):
+            raise RuntimeError('incomplete probe observation')
+    return rows
 
 
 def main():
@@ -80,9 +121,21 @@ def main():
 
     # 적용 전 실패도 적용 후 실패와 같은 형식으로 남긴다 (후보는 적용되지 않은 상태)
     try:
+        scenario = load_json(args.scenario)
+        probes = scenario.get('probes')
+        if (not isinstance(probes, list) or not probes or
+                any(not isinstance(p, dict) or not isinstance(p.get('id'), str) or
+                    not isinstance(p.get('kind'), str) or p.get('expect') not in ('allow', 'block')
+                    for p in probes)):
+            raise RuntimeError('invalid scenario probes')
+        expected = {p['id']: p for p in probes}
+        if len(expected) != len(probes):
+            raise RuntimeError('duplicate scenario probe IDs')
         require_lab()  # 랩이 온전하지 않으면 후보 룰을 적용조차 하지 않는다
         out["recovered"] = deadman.recover()  # 남은 타이머가 이번 실행 도중 만료되지 않게 먼저 처리한다
         saved = snapshot()
+        # arm 호출 자체와 후보 적용에 걸린 시간도 잔여 예산에서 차감한다.
+        deadman_deadline = time.monotonic() + args.watch + args.deadman_grace
         token = deadman.arm(saved, args.watch + args.deadman_grace)
         try:
             nft_apply(to_nft(load_json(args.ruleset), stateful=stateful))  # nft -f 는 원자적이라 실패하면 아무것도 바뀌지 않는다
@@ -103,9 +156,10 @@ def main():
     try:
         deadline = out["t_apply"] + args.watch
         while True:
-            result = probe(args.scenario)
+            result = probe(args.scenario, deadman_deadline=deadman_deadline)
             out["probe"] = result
-            if not all(r["pass"] for r in result["results"]):
+            rows = complete_probe(result, expected)
+            if not all(r["pass"] for r in rows):
                 out["t_detect"] = time.time()
                 nft_apply(saved)
                 out["t_restored"] = time.time()
